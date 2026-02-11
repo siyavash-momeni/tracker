@@ -6,7 +6,7 @@ export default function Home() {
           Bienvenue sur TrackerFront
         </h1>
         <p className="text-lg text-zinc-700 dark:text-zinc-300">
-          Site en construction
+          Site en construction 
         </p>
       </main>
     </div>
