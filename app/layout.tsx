@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider, SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { checkAndSyncUser } from "@/lib/userSync";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,42 +15,47 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mon App avec Clerk",
-  description: "Authentification gérée par Clerk",
+  title: "My App with Clerk",
+  description: "Authentication managed by Clerk and Neon database",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
+  // Automatic synchronization from Clerk User to Neon DB
+  // This runs on the server side upon every page load
+  await checkAndSyncUser();
+
   return (
-    // Le Provider doit envelopper TOUT le HTML pour que l'auth fonctionne partout
     <ClerkProvider>
       <html lang="fr">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
           
-          {/* Ton Header : Il sera visible sur toutes les pages */}
-          <header className="flex justify-end items-center p-4 gap-4 h-16 border-b">
+          <header className="flex justify-end items-center p-4 gap-4 h-16 border-b bg-white">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="text-sm font-medium hover:underline">Se connecter</button>
+                <button className="text-sm font-medium hover:text-[#6c47ff] transition-colors cursor-pointer">
+                  Sign In
+                </button>
               </SignInButton>
               
               <SignUpButton mode="modal">
-                <button className="bg-[#6c47ff] text-white rounded-full font-medium text-sm h-10 px-4">
-                  S'inscrire
+                <button className="bg-[#6c47ff] hover:bg-[#5a3ae6] text-white rounded-full font-medium text-sm h-10 px-4 transition-all cursor-pointer">
+                  Sign Up
                 </button>
               </SignUpButton>
             </SignedOut>
 
             <SignedIn>
+              {/* UserButton handles profile management and sign-out */}
               <UserButton afterSignOutUrl="/" />
             </SignedIn>
           </header>
 
-          {/* Le contenu de tes pages spécifiques (page.tsx) s'affichera ici */}
-          <main>
+          <main className="min-h-screen">
             {children}
           </main>
 
