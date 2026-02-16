@@ -1,39 +1,84 @@
 import { NextResponse } from 'next/server';
-import { prisma } from "@/prisma.client";
+import { prisma } from "@/lib/prisma"; // Vérifie ton chemin d'import
+import { auth } from "@clerk/nextjs/server";
 
 interface RouteParams {
-  params: Promise<{ id: string }>; // On précise que c'est une Promise désormais
+  params: Promise<{ id: string }>;
 }
 
 // DELETE /api/notes/[id]
 export async function DELETE(request: Request, { params }: RouteParams) {
-  // ICI : On ajoute le "await" pour déballer l'ID
   const { id } = await params;
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
+    // 🔒 Security: We only delete if ID matches AND userId matches
     await prisma.notes.delete({ 
-      where: { id } 
+      where: { 
+        id: id,
+        userId: userId // This prevents deleting someone else's note
+      } 
     });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    return NextResponse.json({ error: "Error during deletion" }, { status: 500 });
+    console.error("DELETE Error:", error);
+    return NextResponse.json({ error: "Error during deletion or note not found" }, { status: 500 });
   }
 }
 
-// Applique la même chose pour tes autres méthodes dans ce fichier :
+// GET /api/notes/[id]
 export async function GET(request: Request, { params }: RouteParams) {
-  const { id } = await params; // Ajoute await ici aussi
-  const note = await prisma.notes.findUnique({ where: { id } });
-  if (!note) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(note);
+  const { id } = await params;
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const note = await prisma.notes.findUnique({ 
+      where: { 
+        id: id,
+        userId: userId // 🔒 Security: User can only read their own notes
+      } 
+    });
+
+    if (!note) return NextResponse.json({ error: "Note not found" }, { status: 404 });
+    return NextResponse.json(note);
+  } catch (error) {
+    return NextResponse.json({ error: "Error fetching note" }, { status: 500 });
+  }
 }
 
+// PUT /api/notes/[id]
 export async function PUT(request: Request, { params }: RouteParams) {
-  const { id } = await params; // Et ici aussi
-  const { title, content } = await request.json();
-  const updated = await prisma.notes.update({
-    where: { id },
-    data: { title, content }
-  });
-  return NextResponse.json(updated);
+  const { id } = await params;
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { title, content } = await request.json();
+
+    // 🔒 Security: updateMany or update with specific where clause
+    // Here we use update but verify the ownership
+    const updated = await prisma.notes.update({
+      where: { 
+        id: id,
+        userId: userId // Ensures you can't edit someone else's note
+      },
+      data: { title, content }
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error("PUT Error:", error);
+    return NextResponse.json({ error: "Update failed or unauthorized" }, { status: 500 });
+  }
 }

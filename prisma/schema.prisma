@@ -18,7 +18,8 @@ model Notes {
   title     String
   content   String
   createdAt DateTime @default(now())
-  
+  userId    String
+  user      User   @relation(fields: [userId], references: [clerkId])
 }
 
 model User {
@@ -26,4 +27,5 @@ model User {
   clerkId     String   @unique // C'est ici qu'on stockera le "user_..." de Clerk
   email       String   @unique
   createdAt   DateTime @default(now())
+  notes     Notes[]
 }
