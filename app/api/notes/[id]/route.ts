@@ -16,7 +16,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 });
+    return NextResponse.json({ error: "Error during deletion" }, { status: 500 });
   }
 }
 

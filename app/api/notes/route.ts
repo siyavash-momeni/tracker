@@ -9,7 +9,7 @@ export async function GET() {
     });
     return NextResponse.json(notes);
   } catch (error) {
-    return NextResponse.json({ error: "Erreur lors de la récupération" }, { status: 500 });
+    return NextResponse.json({ error: "Error during deletion" }, { status: 500 });
   }
 }
 
