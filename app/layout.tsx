@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "My App with Clerk",
-  description: "Authentication managed by Clerk and Neon database",
+  title: "Tracker",
+  description: "Authentication",
 };
 
 export default async function RootLayout({

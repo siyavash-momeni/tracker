@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const { userId } = await auth();
 
-    // If no user is logged in, we return an empty list or unauthorized
+    // If no user is logged in, unauthorized
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       data: { 
         title, 
         content,
-        userId: userId // 🔗 Link the note to the user automatically
+        userId: userId
       }
     });
 
