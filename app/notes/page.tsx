@@ -1,5 +1,7 @@
-"use client";
+"use client"; // Obligatoire pour les hooks useState/useEffect
 
+import { useAuth } from "@clerk/nextjs"; // Version client de auth()
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 interface Note {
@@ -9,6 +11,10 @@ interface Note {
 }
 
 export default function NotesPage() {
+  const { isLoaded, userId } = useAuth();
+  const router = useRouter();
+
+  // États pour les notes
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -19,15 +25,31 @@ export default function NotesPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
 
+  // Gestion de la redirection si non connecté
+  useEffect(() => {
+    if (isLoaded && !userId) {
+      router.push("/");
+    }
+  }, [isLoaded, userId, router]);
+
   const fetchNotes = async () => {
-    const res = await fetch("/api/notes");
-    if (res.ok) {
-      const data = await res.json();
-      setNotes(data);
+    try {
+      const res = await fetch("/api/notes");
+      if (res.ok) {
+        const data = await res.json();
+        setNotes(data);
+      }
+    } catch (error) {
+      console.error("Erreur fetch:", error);
     }
   };
 
-  useEffect(() => { fetchNotes(); }, []);
+  useEffect(() => {
+    if (userId) fetchNotes();
+  }, [userId]);
+
+  // Si Clerk n'a pas encore fini de charger, on affiche rien (ou un loader)
+  if (!isLoaded || !userId) return <p className="p-8 text-center">Chargement...</p>;
 
   // CREATE
   const addNote = async (e: React.FormEvent) => {
@@ -40,7 +62,8 @@ export default function NotesPage() {
       headers: { "Content-Type": "application/json" },
     });
     if (res.ok) {
-      setTitle(""); setContent("");
+      setTitle(""); 
+      setContent("");
       fetchNotes();
     }
     setLoading(false);
@@ -78,7 +101,7 @@ export default function NotesPage() {
         
         <header className="mb-12 border-b border-gray-100 pb-8">
           <h1 className="text-2xl font-medium tracking-tight">Archives</h1>
-          <p className="text-gray-400 text-sm mt-1">CRUD complet avec Prisma & Neon</p>
+          <p className="text-gray-400 text-sm mt-1">Connecté en tant que : {userId}</p>
         </header>
 
         {/* CREATE FORM */}
