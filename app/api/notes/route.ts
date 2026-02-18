@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from "@/lib/prisma"; // Vérifie bien que c'est le bon chemin vers ton instance
+import { prisma } from "@/prisma.client"; // Vérifie bien que c'est le bon chemin vers ton instance
 import { auth } from "@clerk/nextjs/server";
 
 // GET /api/notes - Fetch only the notes of the connected user

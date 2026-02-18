@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from "@/lib/prisma"; // Vérifie ton chemin d'import
+import { prisma } from "@/prisma.client"; 
 import { auth } from "@clerk/nextjs/server";
 
 interface RouteParams {
