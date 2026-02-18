@@ -6,6 +6,7 @@ const prisma = new PrismaClient()
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('Secret preview:', process.env.CLERK_WEBHOOK_SIGNING_SECRET?.slice(0,5));
     const evt = await verifyWebhook(req)
     const { type, data } = evt as { type: string; data: any };
 
