@@ -1,43 +1,54 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider, SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs';
 import "./globals.css";
-
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "Tracker",
-  description: "Authentication",
-};
+import { Home, BarChart2, PlusCircle, Settings } from "lucide-react"; // Utilisation de Lucide pour les icônes
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
       <html lang="fr">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <header className="flex justify-end items-center p-4 gap-4 h-16 border-b bg-white">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button className="text-sm font-medium hover:text-[#6c47ff] transition-colors cursor-pointer">
-                  Sign In
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="bg-[#6c47ff] hover:bg-[#5a3ae6] text-white rounded-full font-medium text-sm h-10 px-4 transition-all cursor-pointer">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </SignedOut>
-
-            <SignedIn>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
+        <body className="antialiased bg-gray-50 flex flex-col h-screen overflow-hidden">
+          
+          {/* HEADER : Titre centré + Profil à droite */}
+          <header className="safe-top bg-white border-b h-16 flex items-center justify-between px-4 shrink-0">
+            <div className="w-10" /> {/* Spacer pour équilibrer le titre centré */}
+            <h1 className="text-lg font-semibold text-gray-900">Habit Tracker</h1>
+            <div className="w-10 flex justify-end">
+              <SignedIn>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                   <button className="text-xs font-medium text-blue-600">Login</button>
+                </SignInButton>
+              </SignedOut>
+            </div>
           </header>
 
-          <main className="min-h-screen">{children}</main>
+          {/* BODY : Zone de contenu vide et scrollable si nécessaire */}
+          <main className="flex-1 overflow-hidden">
+            {children}
+          </main>
+
+          {/* BOTTOM NAVIGATION : 4 Onglets */}
+          <nav className="safe-bottom bg-white border-t h-20 flex items-center justify-around px-2 shrink-0">
+            <NavItem icon={<Home size={24} />} label="Habits" active />
+            <NavItem icon={<BarChart2 size={24} />} label="Overview" />
+            <NavItem icon={<PlusCircle size={24} />} label="Add Habit" />
+            <NavItem icon={<Settings size={24} />} label="Settings" />
+          </nav>
+
         </body>
       </html>
     </ClerkProvider>
+  );
+}
+
+// Composant utilitaire pour les items de navigation
+function NavItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
+  return (
+    <button className={`flex flex-col items-center justify-center gap-1 w-full ${active ? 'text-blue-600' : 'text-gray-400'}`}>
+      {icon}
+      <span className="text-[10px] font-medium">{label}</span>
+    </button>
   );
 }
