@@ -13,19 +13,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now())
+  notes     Notes[]
+  habits    Habit[]  // Relation vers les habitudes
+}
+
+model Habit {
+  id          String                @id @default(uuid())
+  title       String
+  emoji       String                @default("🎯")
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  
+  // Relation avec l'utilisateur
+  userId      String
+  user        User                  @relation(fields: [userId], references: [clerkId])
+  
+  // Relation avec les completions
+  completions HabitCompletion[]
+
+  @@index([userId]) // Pour accélérer la recherche des habitudes d'un user précis
+}
+
+model HabitCompletion {
+  id        String   @id @default(uuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  completedDate DateTime // Date de completion (sans l'heure)
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, completedDate]) // Une completion par habit par jour
+  @@index([habitId])
+}
+
 model Notes {
   id        String   @id @default(uuid())
   title     String
   content   String
   createdAt DateTime @default(now())
   userId    String
-  user      User   @relation(fields: [userId], references: [clerkId])
-}
-
-model User {
-  id          String   @id @default(uuid())
-  clerkId     String   @unique // C'est ici qu'on stockera le "user_..." de Clerk
-  email       String   @unique
-  createdAt   DateTime @default(now())
-  notes     Notes[]
+  user      User     @relation(fields: [userId], references: [clerkId])
 }
