@@ -14,8 +14,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #171717;
   }
 }
 
@@ -27,6 +27,31 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Pleasant global background for the whole app */
+.app-background {
+  background:
+    radial-gradient(80rem 80rem at -10% -10%, rgba(59, 130, 246, 0.08), transparent 60%),
+    radial-gradient(60rem 60rem at 110% 10%, rgba(16, 185, 129, 0.08), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.page-header {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  padding: 0.75rem 1rem;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+@media (min-width: 640px) {
+  .page-header {
+    border-radius: 1.25rem;
+    padding: 1rem 1.5rem;
+  }
 }
 
 /* Smooth scrolling */
@@ -105,3 +130,32 @@ button {
 :focus-visible {
   outline: none;
   @apply ring-2 ring-blue-500 ring-offset-2;}
+
+/* Container and layout helpers */
+.app-root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1 1 auto;
+  min-height: 0; /* important pour permettre au scroll interne de fonctionner dans un flex container */
+  overflow-y: auto; /* n'affiche la barre de scroll que s'il y a un overflow */
+}
+
+.container {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .container { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+
+/* Ensure mobile/tablet/desktop font sizing is consistent */
+h1, h2, h3 { line-height: 1.05; }

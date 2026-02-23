@@ -84,9 +84,9 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="px-3 sm:px-4 py-4 sm:py-6 bg-white/60 backdrop-blur-sm border-b border-gray-200/50">
-        <div className="max-w-7xl mx-auto flex items-start justify-between">
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="page-header mb-4">
+        <div className="container relative">
           <div className="flex-1">
             <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3 sm:mb-4">Suivi du jour</h2>
             <div className="flex items-center justify-between gap-2 sm:gap-3">
@@ -113,7 +113,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="ml-4 mt-1">
+          <div className="absolute right-0 top-0">
             {habits.length > 0 && (
               <Link href="/add_habit">
                 <button className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg shadow-sm">
@@ -125,7 +125,7 @@ export default function Home() {
         </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
