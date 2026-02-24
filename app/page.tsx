@@ -19,9 +19,11 @@ interface HabitWithCompletion extends Habit {
 export default function Home() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [selectedDate, setSelectedDate] = useState<Moment>(() => moment().startOf('day'));
+  const [displayedWeekBase, setDisplayedWeekBase] = useState<Moment>(() => moment().startOf('day'));
   const [habitsForDate, setHabitsForDate] = useState<HabitWithCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   const getWeekDays = (base: Moment) => {
     const days: Moment[] = [];
@@ -30,7 +32,24 @@ export default function Home() {
     return days;
   };
 
-  const weekDays = getWeekDays(selectedDate);
+  const today = moment().startOf('day');
+  const isTodaySelected = selectedDate.isSame(today, 'day');
+  const weekDays = getWeekDays(displayedWeekBase);
+  const displayedDays = (() => {
+    if (!isSmallScreen) return weekDays;
+    const selectedIndex = weekDays.findIndex((day) => day.isSame(selectedDate, 'day'));
+    const safeIndex = selectedIndex === -1 ? 2 : selectedIndex;
+    const start = Math.min(Math.max(safeIndex - 2, 0), 2);
+    return weekDays.slice(start, start + 5);
+  })();
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsSmallScreen(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => { fetchHabits(); }, []);
   useEffect(() => { if (habits.length) fetchHabitsForDate(selectedDate); }, [selectedDate, habits]);
@@ -88,18 +107,29 @@ export default function Home() {
       <div className="page-header mb-4">
         <div className="container relative">
           <div className="flex-1">
-            <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3 sm:mb-4">Suivi du jour</h2>
+            <div className="flex items-center justify-between gap-3 mb-4 sm:mb-5">
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Suivi du jour</h2>
+
+              {habits.length > 0 && (
+                <Link href="/add_habit">
+                  <button className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg shadow-sm">
+                    <Plus size={16} /> Ajouter
+                  </button>
+                </Link>
+              )}
+            </div>
+
             <div className="flex items-center justify-between gap-2 sm:gap-3">
-              <button onClick={() => setSelectedDate(selectedDate.clone().subtract(1, 'week'))} className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600">
+              <button onClick={() => setDisplayedWeekBase(displayedWeekBase.clone().subtract(1, 'week'))} className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600">
                 <ChevronLeft size={18} />
               </button>
 
-              <div className="grid grid-cols-7 gap-2 flex-1 justify-center">
-                {weekDays.map(day => {
+              <div className="grid grid-cols-5 sm:grid-cols-7 gap-1.5 sm:gap-2 flex-1 justify-center px-1 sm:px-2">
+                {displayedDays.map(day => {
                   const isSelected = selectedDate.isSame(day, 'day');
                   const isFuture = day.isAfter(moment(), 'day');
                   return (
-                    <button key={day.format('YYYY-MM-DD')} onClick={() => !isFuture && setSelectedDate(day)} disabled={isFuture} className={`flex flex-col items-center justify-center gap-1 px-2 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-2xl transition-all duration-300 font-medium text-xs sm:text-sm ${isSelected ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg' : isFuture ? 'bg-white/40 text-gray-400 opacity-60 cursor-not-allowed' : 'bg-white/50 text-gray-700 hover:bg-white/80 border border-gray-200/50'}`}>
+                    <button key={day.format('YYYY-MM-DD')} onClick={() => !isFuture && setSelectedDate(day)} disabled={isFuture} className={`flex flex-col items-center justify-center gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-2xl transition-all duration-300 font-medium text-xs sm:text-sm ${isSelected ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg' : isFuture ? 'bg-white/40 text-gray-400 opacity-60 cursor-not-allowed' : 'bg-white/50 text-gray-700 hover:bg-white/80 border border-gray-200/50'}`}>
                       <span className="text-[8px] sm:text-xs font-bold tracking-wider uppercase opacity-80">{day.format('ddd')}</span>
                       <span className="text-base sm:text-lg font-bold">{day.format('D')}</span>
                     </button>
@@ -107,20 +137,25 @@ export default function Home() {
                 })}
               </div>
 
-              <button onClick={() => setSelectedDate(selectedDate.clone().add(1, 'week'))} className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600">
+              <button onClick={() => setDisplayedWeekBase(displayedWeekBase.clone().add(1, 'week'))} className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600">
                 <ChevronRight size={18} />
               </button>
             </div>
-          </div>
 
-          <div className="absolute right-0 top-0">
-            {habits.length > 0 && (
-              <Link href="/add_habit">
-                <button className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg shadow-sm">
-                  <Plus size={16} /> Ajouter
-                </button>
-              </Link>
-            )}
+            <div className="flex justify-end mt-2 sm:mt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const now = moment().startOf('day');
+                  setSelectedDate(now);
+                  setDisplayedWeekBase(now);
+                }}
+                disabled={isTodaySelected}
+                className="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg border border-gray-200 bg-white/70 text-gray-700 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Aujourd’hui
+              </button>
+            </div>
           </div>
         </div>
       </div>

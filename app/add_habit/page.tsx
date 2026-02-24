@@ -38,20 +38,21 @@ export default function AddHabitPage() {
   };
 
   return (
-    <div className="flex flex-1 min-h-full w-full">
-      <div className="flex flex-col flex-1 min-h-full w-full px-3 sm:px-6 py-4 items-center">
+    <div className="flex flex-col flex-1 min-h-0 w-full">
 
-        {/* Header */}
-        <div className="page-header mb-4 w-full">
-          <div className="container">
-            <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Créer une habitude
-            </h2>
-          </div>
+      {/* Header */}
+      <div className="page-header mb-4 w-full shrink-0">
+        <div className="container">
+          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Créer une habitude
+          </h2>
         </div>
+      </div>
 
+      <main className="flex-1 overflow-y-auto min-h-0 w-full px-3 sm:px-6 py-4">
+        <div className="max-w-xl w-full mx-auto">
         {/* Formulaire */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between min-h-full max-w-xl w-full space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pb-24">
 
         {/* Erreur */}
         {error && (
@@ -75,25 +76,30 @@ export default function AddHabitPage() {
         {/* Emoji */}
         <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-2 relative">
           <div
-            className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-2xl text-center cursor-pointer hover:border-blue-400 transition-all"
-            onClick={() => setShowPicker(!showPicker)}
+            className="relative p-4 bg-white border-2 border-dashed border-gray-200 rounded-2xl text-center cursor-pointer hover:border-blue-400 transition-all"
+            onClick={() => {
+              if (window.matchMedia('(min-width: 640px)').matches) {
+                setShowPicker(!showPicker);
+              }
+            }}
           >
             <div className="text-5xl sm:text-6xl mb-1">{emoji}</div>
-            <div className="flex justify-center items-center gap-1 text-blue-600 text-sm font-semibold">
-              <SmilePlus size={16} /> Personnaliser
-            </div>
-          </div>
+            {!emoji && (
+              <div className="flex justify-center items-center gap-1 text-blue-600 text-sm font-semibold">
+                <SmilePlus size={16} /> Personnaliser
+              </div>
+            )}
 
-          {/* Mobile: use native emoji keyboard */}
-          <input
-            type="text"
-            inputMode="text"
-            value={emoji}
-            onChange={(e) => setEmoji(e.target.value.slice(0, 2))}
-            className="sm:hidden w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-base font-medium text-center"
-            aria-label="Emoji"
-            placeholder="Entrez votre emoji"
-          />
+            <input
+              type="text"
+              inputMode="text"
+              value={emoji}
+              onChange={(e) => setEmoji(e.target.value.slice(0, 2))}
+              className="sm:hidden absolute inset-0 opacity-0 cursor-text text-center"
+              aria-label="Emoji"
+              placeholder="Entrez votre emoji"
+            />
+          </div>
 
           {showPicker && (
             <>
@@ -136,7 +142,8 @@ export default function AddHabitPage() {
           </button>
 
         </form>
+        </div>
+      </main>
       </div>
-    </div>
   );
 }
