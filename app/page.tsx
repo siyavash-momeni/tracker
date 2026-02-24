@@ -32,15 +32,27 @@ export default function Home() {
     return days;
   };
 
+  const getRangeDays = (base: Moment, count: number) => {
+    const days: Moment[] = [];
+    const start = base.clone().startOf('day');
+    for (let i = 0; i < count; i++) days.push(start.clone().add(i, 'day'));
+    return days;
+  };
+
   const today = moment().startOf('day');
   const isTodaySelected = selectedDate.isSame(today, 'day');
-  const weekDays = getWeekDays(displayedWeekBase);
-  const displayedDays = (() => {
-    if (!isSmallScreen) return weekDays;
-    const selectedIndex = weekDays.findIndex((day) => day.isSame(selectedDate, 'day'));
-    const safeIndex = selectedIndex === -1 ? 2 : selectedIndex;
-    const start = Math.min(Math.max(safeIndex - 2, 0), 2);
-    return weekDays.slice(start, start + 5);
+  const displayedDays = isSmallScreen
+    ? getRangeDays(displayedWeekBase, 5)
+    : getWeekDays(displayedWeekBase);
+  const isTodayVisible = displayedDays.some((day) => day.isSame(today, 'day'));
+
+  const periodLabel = (() => {
+    const start = displayedDays[0];
+    const end = displayedDays[displayedDays.length - 1];
+    if (!start || !end) return '';
+    if (start.isSame(end, 'month')) return start.format('MMMM YYYY');
+    if (start.isSame(end, 'year')) return `${start.format('MMMM')} - ${end.format('MMMM YYYY')}`;
+    return `${start.format('MMMM YYYY')} - ${end.format('MMMM YYYY')}`;
   })();
 
   useEffect(() => {
@@ -120,7 +132,16 @@ export default function Home() {
             </div>
 
             <div className="flex items-center justify-between gap-2 sm:gap-3">
-              <button onClick={() => setDisplayedWeekBase(displayedWeekBase.clone().subtract(1, 'week'))} className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600">
+              <button
+                onClick={() =>
+                  setDisplayedWeekBase(
+                    displayedWeekBase
+                      .clone()
+                      .subtract(isSmallScreen ? 5 : 1, isSmallScreen ? 'day' : 'week')
+                  )
+                }
+                className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600"
+              >
                 <ChevronLeft size={18} />
               </button>
 
@@ -137,12 +158,22 @@ export default function Home() {
                 })}
               </div>
 
-              <button onClick={() => setDisplayedWeekBase(displayedWeekBase.clone().add(1, 'week'))} className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600">
+              <button
+                onClick={() =>
+                  setDisplayedWeekBase(
+                    displayedWeekBase
+                      .clone()
+                      .add(isSmallScreen ? 5 : 1, isSmallScreen ? 'day' : 'week')
+                  )
+                }
+                className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600"
+              >
                 <ChevronRight size={18} />
               </button>
             </div>
 
-            <div className="flex justify-end mt-2 sm:mt-3">
+            <div className="flex items-center justify-between mt-2 sm:mt-3 gap-2">
+              <p className="text-xs sm:text-sm font-semibold text-gray-600 capitalize">{periodLabel}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -150,7 +181,7 @@ export default function Home() {
                   setSelectedDate(now);
                   setDisplayedWeekBase(now);
                 }}
-                disabled={isTodaySelected}
+                disabled={isTodaySelected && isTodayVisible}
                 className="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg border border-gray-200 bg-white/70 text-gray-700 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Aujourd’hui
