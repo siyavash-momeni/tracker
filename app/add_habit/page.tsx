@@ -11,6 +11,12 @@ export default function AddHabitPage() {
   const [error, setError] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
+  const extractFirstEmoji = (value: string) => {
+    const emojiRegex = /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)/gu;
+    const match = value.match(emojiRegex);
+    return match?.[0] ?? '';
+  };
+
   const popularEmojis = ['🎯', '💪', '🏃', '🧘', '💧', '📚', '🎨', '🎵', '🥗', '😴', '📝', '🚴'];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,7 +92,7 @@ export default function AddHabitPage() {
             <div className="text-5xl sm:text-6xl mb-1">{emoji}</div>
             {!emoji && (
               <div className="flex justify-center items-center gap-1 text-blue-600 text-sm font-semibold">
-                <SmilePlus size={16} /> Personnaliser
+                <SmilePlus size={16} /> Choisissez votre propre emoji
               </div>
             )}
 
@@ -94,10 +100,13 @@ export default function AddHabitPage() {
               type="text"
               inputMode="text"
               value={emoji}
-              onChange={(e) => setEmoji(e.target.value.slice(0, 2))}
+              onChange={(e) => setEmoji(extractFirstEmoji(e.target.value))}
               className="sm:hidden absolute inset-0 opacity-0 cursor-text text-center"
               aria-label="Emoji"
               placeholder="Entrez votre emoji"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
             />
           </div>
 

@@ -23,7 +23,6 @@ export default function Home() {
   const [habitsForDate, setHabitsForDate] = useState<HabitWithCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   const getWeekDays = (base: Moment) => {
     const days: Moment[] = [];
@@ -32,18 +31,9 @@ export default function Home() {
     return days;
   };
 
-  const getRangeDays = (base: Moment, count: number) => {
-    const days: Moment[] = [];
-    const start = base.clone().startOf('day');
-    for (let i = 0; i < count; i++) days.push(start.clone().add(i, 'day'));
-    return days;
-  };
-
   const today = moment().startOf('day');
   const isTodaySelected = selectedDate.isSame(today, 'day');
-  const displayedDays = isSmallScreen
-    ? getRangeDays(displayedWeekBase, 5)
-    : getWeekDays(displayedWeekBase);
+  const displayedDays = getWeekDays(displayedWeekBase);
   const isTodayVisible = displayedDays.some((day) => day.isSame(today, 'day'));
 
   const periodLabel = (() => {
@@ -54,14 +44,6 @@ export default function Home() {
     if (start.isSame(end, 'year')) return `${start.format('MMMM')} - ${end.format('MMMM YYYY')}`;
     return `${start.format('MMMM YYYY')} - ${end.format('MMMM YYYY')}`;
   })();
-
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 639px)');
-    const update = () => setIsSmallScreen(media.matches);
-    update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, []);
 
   useEffect(() => { fetchHabits(); }, []);
   useEffect(() => { if (habits.length) fetchHabitsForDate(selectedDate); }, [selectedDate, habits]);
@@ -131,21 +113,21 @@ export default function Home() {
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center justify-between gap-1 sm:gap-3 -mx-4 sm:mx-0">
               <button
                 onClick={() =>
                   setDisplayedWeekBase(
                     displayedWeekBase
                       .clone()
-                      .subtract(isSmallScreen ? 5 : 1, isSmallScreen ? 'day' : 'week')
+                      .subtract(1, 'week')
                   )
                 }
-                className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600"
+                className="p-0.5 sm:p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600"
               >
                 <ChevronLeft size={18} />
               </button>
 
-              <div className="grid grid-cols-5 sm:grid-cols-7 gap-1.5 sm:gap-2 flex-1 justify-center px-1 sm:px-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2 flex-1 justify-center px-2 sm:px-2">
                 {displayedDays.map(day => {
                   const isSelected = selectedDate.isSame(day, 'day');
                   const isFuture = day.isAfter(moment(), 'day');
@@ -163,10 +145,10 @@ export default function Home() {
                   setDisplayedWeekBase(
                     displayedWeekBase
                       .clone()
-                      .add(isSmallScreen ? 5 : 1, isSmallScreen ? 'day' : 'week')
+                      .add(1, 'week')
                   )
                 }
-                className="p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600"
+                className="p-0.5 sm:p-2 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 text-gray-600"
               >
                 <ChevronRight size={18} />
               </button>
