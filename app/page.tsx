@@ -359,7 +359,7 @@ function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habi
           </>
         )}
 
-        <button onClick={() => deleteHabit(habit.id)} disabled={updatingIds.has(habit.id)} className="p-1.5 sm:p-2.5 bg-red-50 text-red-600 rounded-lg sm:rounded-xl hover:bg-red-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100" title="Supprimer l'habitude">
+        <button onClick={() => deleteHabit(habit.id)} disabled={updatingIds.has(habit.id)} className="p-1.5 sm:p-2.5 bg-red-50 text-red-600 rounded-lg sm:rounded-xl hover:bg-red-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed" title="Supprimer l'habitude">
           <Trash2 size={16} />
         </button>
       </div>
