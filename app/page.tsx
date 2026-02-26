@@ -299,24 +299,8 @@ function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habi
   const frequencyLabel = habit.frequency === 'DAILY' ? 'par jour' : 'par semaine';
 
   return (
-    <div className={`group flex items-center justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-2xl transition-all duration-300 transform ${habit.isCompleted ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 opacity-50' : 'bg-white/70 backdrop-blur-sm border border-gray-200/50 hover:border-blue-300 hover:shadow-lg'}`}>
-      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-        <div className={`text-3xl sm:text-4xl flex-shrink-0 ${habit.isCompleted ? 'scale-100 sm:scale-110' : 'group-hover:scale-110'}`}>{habit.emoji}</div>
-        <div className="min-w-0">
-          <h3 className={`font-semibold text-sm sm:text-base ${habit.isCompleted ? 'text-emerald-700 line-through opacity-70' : 'text-gray-900'}`}>{habit.title}</h3>
-          {isSingleDailyCheckbox ? (
-            <p className="text-xs text-gray-500 mt-1">
-              {frequencyLabel} · {habit.isCompleted ? 'Validé' : 'À valider'}
-            </p>
-          ) : (
-            <p className="text-xs text-gray-500 mt-1">
-              {frequencyLabel} · {habit.currentProgress} sur {habit.targetValue}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+    <div className={`group grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-2xl transition-all duration-300 transform ${habit.isCompleted ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 opacity-50' : 'bg-white/70 backdrop-blur-sm border border-gray-200/50 hover:border-blue-300 hover:shadow-lg'}`}>
+      <div className="flex items-center justify-start min-w-0">
         {isSingleDailyCheckbox ? (
           <button
             onClick={() => updateHabitValue(habit, habit.isCompleted ? 0 : 1)}
@@ -358,7 +342,23 @@ function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habi
             </button>
           </>
         )}
+      </div>
 
+      <div className="min-w-0 text-center px-1 sm:px-2">
+        <div className={`text-3xl sm:text-4xl ${habit.isCompleted ? 'scale-100 sm:scale-110' : 'group-hover:scale-110'} inline-block`}>{habit.emoji}</div>
+        <h3 className={`font-semibold text-sm sm:text-base mt-1 ${habit.isCompleted ? 'text-emerald-700 line-through opacity-70' : 'text-gray-900'}`}>{habit.title}</h3>
+        {isSingleDailyCheckbox ? (
+          <p className="text-xs text-gray-500 mt-1">
+            {frequencyLabel} · {habit.isCompleted ? 'Validé' : 'À valider'}
+          </p>
+        ) : (
+          <p className="text-xs text-gray-500 mt-1">
+            {frequencyLabel} · {habit.currentProgress} sur {habit.targetValue}
+          </p>
+        )}
+      </div>
+
+      <div className="flex items-center justify-end min-w-0">
         <button onClick={() => deleteHabit(habit.id)} disabled={updatingIds.has(habit.id)} className="p-1.5 sm:p-2.5 bg-red-50 text-red-600 rounded-lg sm:rounded-xl hover:bg-red-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed" title="Supprimer l'habitude">
           <Trash2 size={16} />
         </button>
