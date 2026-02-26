@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Check, Loader, Trash2, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader, Trash2, Plus, Minus, Check } from "lucide-react";
 import Link from "next/link";
 import moment, { Moment } from "moment";
 
@@ -10,17 +10,29 @@ interface Habit {
   title: string;
   emoji: string;
   createdAt: string;
+  targetValue: number;
+  frequency: "DAILY" | "WEEKLY";
+  activeDays: number[];
 }
 
-interface HabitWithCompletion extends Habit {
-  completedToday: boolean;
+interface HabitWithProgress extends Habit {
+  valueForDate: number;
+  currentProgress: number;
+  isCompleted: boolean;
 }
+
+type HabitProgressPayload = {
+  habitId: string;
+  valueForDate: number;
+  currentProgress: number;
+  isCompleted: boolean;
+};
 
 export default function Home() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [selectedDate, setSelectedDate] = useState<Moment>(() => moment().startOf('day'));
   const [displayedWeekBase, setDisplayedWeekBase] = useState<Moment>(() => moment().startOf('day'));
-  const [habitsForDate, setHabitsForDate] = useState<HabitWithCompletion[]>([]);
+  const [habitsForDate, setHabitsForDate] = useState<HabitWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
 
@@ -67,21 +79,65 @@ export default function Home() {
       const res = await fetch(`/api/habits/by-date?date=${dateStr}`);
       if (!res.ok) throw new Error('Erreur');
       const data = await res.json();
-      setHabitsForDate(habits.map(h => ({ ...h, completedToday: data.completedHabitIds?.includes(h.id) || false })));
+
+      const progressMap = new Map<string, HabitProgressPayload>(
+        ((data.progressByHabit || []) as HabitProgressPayload[]).map((item) => [item.habitId, item])
+      );
+
+      const habitsWithProgress = habits
+        .filter((habit) => progressMap.has(habit.id))
+        .map((habit) => {
+          const progress = progressMap.get(habit.id);
+          return {
+            ...habit,
+            valueForDate: progress?.valueForDate || 0,
+            currentProgress: progress?.currentProgress || 0,
+            isCompleted: progress?.isCompleted || false,
+          };
+        });
+
+      setHabitsForDate(habitsWithProgress);
     } catch (e) {
       console.error(e);
-      setHabitsForDate(habits.map(h => ({ ...h, completedToday: false })));
+      setHabitsForDate([]);
     }
   };
 
-  const toggleHabitCompletion = async (habitId: string, current: boolean) => {
-    setUpdatingIds(prev => new Set(prev).add(habitId));
+  const updateHabitValue = async (habit: HabitWithProgress, nextValue: number) => {
+    const normalizedNextValue = Math.max(0, Math.min(1000, nextValue));
+
+    setUpdatingIds(prev => new Set(prev).add(habit.id));
     try {
-      const res = await fetch('/api/habits/completion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ habitId, date: selectedDate.format('YYYY-MM-DD'), completed: !current }) });
+      const res = await fetch('/api/habits/completion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          habitId: habit.id,
+          date: selectedDate.format('YYYY-MM-DD'),
+          value: normalizedNextValue,
+        }),
+      });
       if (!res.ok) throw new Error('Erreur');
-      setHabitsForDate(habitsForDate.map(h => h.id === habitId ? { ...h, completedToday: !current } : h));
+
+      setHabitsForDate((prev) =>
+        prev.map((item) => {
+          if (item.id !== habit.id) return item;
+
+          const currentProgress =
+            item.frequency === 'DAILY'
+              ? normalizedNextValue
+              : item.currentProgress - item.valueForDate + normalizedNextValue;
+
+          return {
+            ...item,
+            valueForDate: normalizedNextValue,
+            currentProgress,
+            isCompleted: currentProgress >= item.targetValue,
+          };
+        })
+      );
     } catch (e) { console.error(e); }
-    setUpdatingIds(prev => { const next = new Set(prev); next.delete(habitId); return next; });
+    setUpdatingIds(prev => { const next = new Set(prev); next.delete(habit.id); return next; });
   };
 
   const deleteHabit = async (id: string) => {
@@ -183,7 +239,7 @@ export default function Home() {
               <p className="text-sm sm:text-base text-gray-600 font-medium">Chargement en cours...</p>
             </div>
           </div>
-        ) : habits.length === 0 ? (
+          ) : habits.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center justify-center text-center px-4">
               <div className="text-5xl sm:text-6xl mb-6 opacity-50">📝</div>
@@ -195,33 +251,39 @@ export default function Home() {
         ) : (
           <div className="px-3 sm:px-4 py-4 sm:py-6">
             <div className="max-w-2xl mx-auto space-y-6 sm:space-y-8">
-              {habitsForDate.filter(h => !h.completedToday).length > 0 && (
+              {habitsForDate.filter(h => !h.isCompleted).length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3 sm:mb-4">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                     <h3 className="text-base sm:text-lg font-bold text-gray-900">À accomplir</h3>
-                    <span className="ml-auto text-xs sm:text-sm font-semibold bg-blue-100 text-blue-700 px-2.5 sm:px-3 py-1 rounded-full">{habitsForDate.filter(h => !h.completedToday).length}</span>
+                    <span className="ml-auto text-xs sm:text-sm font-semibold bg-blue-100 text-blue-700 px-2.5 sm:px-3 py-1 rounded-full">{habitsForDate.filter(h => !h.isCompleted).length}</span>
                   </div>
                   <div className="space-y-2 sm:space-y-3">
-                    {habitsForDate.filter(h => !h.completedToday).map((habit, idx) => (
-                      <HabitCard key={habit.id} habit={habit} idx={idx} updatingIds={updatingIds} toggleHabitCompletion={toggleHabitCompletion} deleteHabit={deleteHabit} />
+                    {habitsForDate.filter(h => !h.isCompleted).map((habit) => (
+                      <HabitCard key={habit.id} habit={habit} updatingIds={updatingIds} updateHabitValue={updateHabitValue} deleteHabit={deleteHabit} />
                     ))}
                   </div>
                 </div>
               )}
 
-              {habitsForDate.filter(h => h.completedToday).length > 0 && (
+              {habitsForDate.filter(h => h.isCompleted).length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3 sm:mb-4">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                     <h3 className="text-base sm:text-lg font-bold text-gray-900">Accomplis</h3>
-                    <span className="ml-auto text-xs sm:text-sm font-semibold bg-emerald-100 text-emerald-700 px-2.5 sm:px-3 py-1 rounded-full">{habitsForDate.filter(h => h.completedToday).length}</span>
+                    <span className="ml-auto text-xs sm:text-sm font-semibold bg-emerald-100 text-emerald-700 px-2.5 sm:px-3 py-1 rounded-full">{habitsForDate.filter(h => h.isCompleted).length}</span>
                   </div>
                   <div className="space-y-2 sm:space-y-3">
-                    {habitsForDate.filter(h => h.completedToday).map((habit, idx) => (
-                      <HabitCard key={habit.id} habit={habit} idx={idx} updatingIds={updatingIds} toggleHabitCompletion={toggleHabitCompletion} deleteHabit={deleteHabit} />
+                    {habitsForDate.filter(h => h.isCompleted).map((habit) => (
+                      <HabitCard key={habit.id} habit={habit} updatingIds={updatingIds} updateHabitValue={updateHabitValue} deleteHabit={deleteHabit} />
                     ))}
                   </div>
+                </div>
+              )}
+
+              {habitsForDate.length === 0 && habits.length > 0 && (
+                <div className="text-center text-sm text-gray-500 bg-white/70 border border-gray-200 rounded-2xl p-4">
+                  Aucune habitude active pour ce jour.
                 </div>
               )}
             </div>
@@ -232,20 +294,58 @@ export default function Home() {
   );
 }
 
-function HabitCard({ habit, idx, updatingIds, toggleHabitCompletion, deleteHabit }: { habit: any; idx: number; updatingIds: Set<string>; toggleHabitCompletion: (habitId: string, isCompleted: boolean) => void; deleteHabit: (habitId: string) => void; }) {
+function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habit: HabitWithProgress; updatingIds: Set<string>; updateHabitValue: (habit: HabitWithProgress, nextValue: number) => void; deleteHabit: (habitId: string) => void; }) {
+  const isSingleDailyCheckbox = habit.frequency === 'DAILY' && habit.targetValue === 1;
+
   return (
-    <div className={`group flex items-center justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-2xl transition-all duration-300 transform ${habit.completedToday ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 opacity-50' : 'bg-white/70 backdrop-blur-sm border border-gray-200/50 hover:border-blue-300 hover:shadow-lg'}`}>
+    <div className={`group flex items-center justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-2xl transition-all duration-300 transform ${habit.isCompleted ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 opacity-50' : 'bg-white/70 backdrop-blur-sm border border-gray-200/50 hover:border-blue-300 hover:shadow-lg'}`}>
       <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-        <div className={`text-3xl sm:text-4xl flex-shrink-0 ${habit.completedToday ? 'scale-100 sm:scale-110' : 'group-hover:scale-110'}`}>{habit.emoji}</div>
+        <div className={`text-3xl sm:text-4xl flex-shrink-0 ${habit.isCompleted ? 'scale-100 sm:scale-110' : 'group-hover:scale-110'}`}>{habit.emoji}</div>
         <div className="min-w-0">
-          <h3 className={`font-semibold text-sm sm:text-base ${habit.completedToday ? 'text-emerald-700 line-through opacity-70' : 'text-gray-900'}`}>{habit.title}</h3>
+          <h3 className={`font-semibold text-sm sm:text-base ${habit.isCompleted ? 'text-emerald-700 line-through opacity-70' : 'text-gray-900'}`}>{habit.title}</h3>
+          <p className="text-xs text-gray-500 mt-1">
+            {habit.currentProgress}/{habit.targetValue} · {habit.frequency === 'DAILY' ? 'Daily' : 'Weekly'}
+          </p>
         </div>
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-        <button onClick={() => toggleHabitCompletion(habit.id, habit.completedToday)} disabled={updatingIds.has(habit.id)} className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border-2 ${habit.completedToday ? 'bg-gradient-to-r from-emerald-500 to-teal-500 border-emerald-500' : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'} disabled:opacity-50 disabled:cursor-not-allowed`} title={habit.completedToday ? 'Marquer comme non complété' : 'Marquer comme complété'}>
-          {updatingIds.has(habit.id) ? <Loader size={14} className="animate-spin" /> : habit.completedToday ? <Check size={14} className="text-white" /> : null}
-        </button>
+        {isSingleDailyCheckbox ? (
+          <button
+            onClick={() => updateHabitValue(habit, habit.isCompleted ? 0 : 1)}
+            disabled={updatingIds.has(habit.id)}
+            className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border-2 transition ${
+              habit.isCompleted
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 border-emerald-500 text-white'
+                : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-500'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            title={habit.isCompleted ? 'Décocher' : 'Cocher'}
+          >
+            {updatingIds.has(habit.id) ? <Loader size={14} className="animate-spin" /> : habit.isCompleted ? <Check size={14} /> : null}
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => updateHabitValue(habit, habit.valueForDate - 1)}
+              disabled={updatingIds.has(habit.id) || habit.valueForDate <= 0}
+              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Réduire la progression"
+            >
+              <Minus size={14} />
+            </button>
+
+            <span className="min-w-8 text-center text-sm font-semibold text-gray-700">{habit.valueForDate}</span>
+
+            <button
+              onClick={() => updateHabitValue(habit, habit.valueForDate + 1)}
+              disabled={updatingIds.has(habit.id)}
+              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Augmenter la progression"
+            >
+              {updatingIds.has(habit.id) ? <Loader size={14} className="animate-spin" /> : <Plus size={14} />}
+            </button>
+          </>
+        )}
 
         <button onClick={() => deleteHabit(habit.id)} disabled={updatingIds.has(habit.id)} className="p-1.5 sm:p-2.5 bg-red-50 text-red-600 rounded-lg sm:rounded-xl hover:bg-red-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100" title="Supprimer l'habitude">
           <Trash2 size={16} />

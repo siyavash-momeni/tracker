@@ -7,9 +7,22 @@ import EmojiPicker, { Theme, EmojiStyle } from 'emoji-picker-react';
 export default function AddHabitPage() {
   const [title, setTitle] = useState('');
   const [emoji, setEmoji] = useState('');
+  const [targetValue, setTargetValue] = useState(1);
+  const [frequency, setFrequency] = useState<'DAILY' | 'WEEKLY'>('DAILY');
+  const [activeDays, setActiveDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+
+  const weekDays = [
+    { value: 1, label: 'Lun' },
+    { value: 2, label: 'Mar' },
+    { value: 3, label: 'Mer' },
+    { value: 4, label: 'Jeu' },
+    { value: 5, label: 'Ven' },
+    { value: 6, label: 'Sam' },
+    { value: 7, label: 'Dim' },
+  ];
 
   const extractFirstEmoji = (value: string) => {
     const emojiRegex = /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)/gu;
@@ -19,17 +32,34 @@ export default function AddHabitPage() {
 
   const popularEmojis = ['🎯', '💪', '🏃', '🧘', '💧', '📚', '🎨', '🎵', '🥗', '😴', '📝', '🚴'];
 
+  const toggleActiveDay = (day: number) => {
+    setActiveDays((prev) => {
+      if (prev.includes(day)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((item) => item !== day);
+      }
+      return [...prev, day].sort((a, b) => a - b);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!title.trim()) return setError("Le titre de l'habitude est requis");
+    if (activeDays.length === 0) return setError('Sélectionnez au moins un jour actif');
 
     setLoading(true);
     try {
       const res = await fetch('/api/add_habit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), emoji }),
+        body: JSON.stringify({
+          title: title.trim(),
+          emoji,
+          targetValue,
+          frequency,
+          activeDays,
+        }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -77,6 +107,67 @@ export default function AddHabitPage() {
             onChange={(e) => setTitle(e.target.value)}
             className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base font-medium"
           />
+        </div>
+
+        <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-3">
+          <label className="text-sm font-semibold text-gray-700">Fréquence</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setFrequency('DAILY')}
+              className={`px-3 py-2 rounded-xl border text-sm font-semibold transition ${
+                frequency === 'DAILY'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              Daily
+            </button>
+            <button
+              type="button"
+              onClick={() => setFrequency('WEEKLY')}
+              className={`px-3 py-2 rounded-xl border text-sm font-semibold transition ${
+                frequency === 'WEEKLY'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              Weekly
+            </button>
+          </div>
+
+          <label className="text-sm font-semibold text-gray-700">
+            Objectif {frequency === 'DAILY' ? 'par jour' : 'par semaine'}
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={1000}
+            value={targetValue}
+            onChange={(e) => setTargetValue(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
+            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base font-medium"
+          />
+
+          <label className="text-sm font-semibold text-gray-700">Jours actifs</label>
+          <div className="grid grid-cols-7 gap-1">
+            {weekDays.map((day) => {
+              const selected = activeDays.includes(day.value);
+              return (
+                <button
+                  key={day.value}
+                  type="button"
+                  onClick={() => toggleActiveDay(day.value)}
+                  className={`px-1 py-2 rounded-lg text-xs font-semibold border transition ${
+                    selected
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {day.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Emoji */}

@@ -16,7 +16,13 @@ export async function POST(request: NextRequest) {
 
     // Parser le body
     const body = await request.json();
-    const { title, emoji = '🎯' } = body;
+    const {
+      title,
+      emoji = '🎯',
+      targetValue = 1,
+      frequency = 'DAILY',
+      activeDays = [1, 2, 3, 4, 5, 6, 7],
+    } = body;
 
     // Validation
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
@@ -33,11 +39,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedTarget = Number(targetValue);
+    if (!Number.isInteger(normalizedTarget) || normalizedTarget < 1 || normalizedTarget > 1000) {
+      return NextResponse.json(
+        { error: 'La valeur cible doit être un entier entre 1 et 1000' },
+        { status: 400 }
+      );
+    }
+
+    if (frequency !== 'DAILY' && frequency !== 'WEEKLY') {
+      return NextResponse.json(
+        { error: 'La fréquence doit être DAILY ou WEEKLY' },
+        { status: 400 }
+      );
+    }
+
+    if (!Array.isArray(activeDays) || activeDays.length === 0) {
+      return NextResponse.json(
+        { error: 'Veuillez sélectionner au moins un jour actif' },
+        { status: 400 }
+      );
+    }
+
+    const normalizedActiveDays = [...new Set(activeDays.map((day) => Number(day)))]
+      .filter((day) => Number.isInteger(day) && day >= 1 && day <= 7)
+      .sort((a, b) => a - b);
+
+    if (normalizedActiveDays.length === 0) {
+      return NextResponse.json(
+        { error: 'Les jours actifs doivent être entre 1 et 7' },
+        { status: 400 }
+      );
+    }
+
     // Créer l'habitude
     const habit = await prisma.habit.create({
       data: {
         title: title.trim(),
         emoji: emoji || '🎯',
+        targetValue: normalizedTarget,
+        frequency,
+        activeDays: normalizedActiveDays,
         userId,
       },
     });
