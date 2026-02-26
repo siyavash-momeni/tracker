@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, AlertCircle, SmilePlus } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Plus, AlertCircle, SmilePlus, Minus } from 'lucide-react';
 import EmojiPicker, { Theme, EmojiStyle } from 'emoji-picker-react';
 
 export default function AddHabitPage() {
@@ -13,6 +13,8 @@ export default function AddHabitPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+  const [targetValueInput, setTargetValueInput] = useState('1');
+  const targetInputRef = useRef<HTMLInputElement | null>(null);
 
   const weekDays = [
     { value: 1, label: 'Lun' },
@@ -32,6 +34,8 @@ export default function AddHabitPage() {
 
   const popularEmojis = ['🎯', '💪', '🏃', '🧘', '💧', '📚', '🎨', '🎵', '🥗', '😴', '📝', '🚴'];
 
+  const clampTargetValue = (value: number) => Math.max(1, Math.min(1000, value));
+
   const toggleActiveDay = (day: number) => {
     setActiveDays((prev) => {
       if (prev.includes(day)) {
@@ -40,6 +44,37 @@ export default function AddHabitPage() {
       }
       return [...prev, day].sort((a, b) => a - b);
     });
+  };
+
+  const updateTargetValueFromInput = (rawValue: string, commit = false) => {
+    const digitsOnly = rawValue.replace(/\D/g, '');
+
+    if (digitsOnly === '') {
+      if (commit) {
+        setTargetValue(1);
+        setTargetValueInput('1');
+      } else {
+        setTargetValueInput('');
+      }
+      return;
+    }
+
+    const normalized = String(clampTargetValue(Number(digitsOnly)));
+    setTargetValueInput(normalized);
+    setTargetValue(Number(normalized));
+  };
+
+  const adjustTargetValue = (delta: number) => {
+    const nextValue = clampTargetValue(targetValue + delta);
+    setTargetValue(nextValue);
+    setTargetValueInput(String(nextValue));
+  };
+
+  const handleFrequencySelect = (value: 'DAILY' | 'WEEKLY') => {
+    setFrequency(value);
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      setTimeout(() => targetInputRef.current?.focus(), 0);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -110,45 +145,89 @@ export default function AddHabitPage() {
         </div>
 
         <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-3">
-          <label className="text-sm font-semibold text-gray-700">Fréquence</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-3">Fréquence</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => setFrequency('DAILY')}
+              onClick={() => handleFrequencySelect('DAILY')}
               className={`px-3 py-2 rounded-xl border text-sm font-semibold transition ${
                 frequency === 'DAILY'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
-              Daily
+              Par jour
             </button>
             <button
               type="button"
-              onClick={() => setFrequency('WEEKLY')}
+              onClick={() => handleFrequencySelect('WEEKLY')}
               className={`px-3 py-2 rounded-xl border text-sm font-semibold transition ${
                 frequency === 'WEEKLY'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
-              Weekly
+              Par semaine
             </button>
           </div>
 
-          <label className="text-sm font-semibold text-gray-700">
-            Objectif {frequency === 'DAILY' ? 'par jour' : 'par semaine'}
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Fréquence {frequency === 'DAILY' ? 'par jour' : 'par semaine'}
           </label>
-          <input
-            type="number"
-            min={1}
-            max={1000}
-            value={targetValue}
-            onChange={(e) => setTargetValue(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
-            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base font-medium"
-          />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => adjustTargetValue(-1)}
+              disabled={targetValue <= 1}
+              className="h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+              title="Diminuer"
+            >
+              <Minus size={16} />
+            </button>
 
-          <label className="text-sm font-semibold text-gray-700">Jours actifs</label>
+            <input
+              ref={targetInputRef}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={targetValueInput}
+              onChange={(e) => updateTargetValueFromInput(e.target.value)}
+              onBlur={() => updateTargetValueFromInput(targetValueInput, true)}
+              className="flex-1 px-3 py-2 text-center bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base font-semibold"
+            />
+
+            <button
+              type="button"
+              onClick={() => adjustTargetValue(1)}
+              disabled={targetValue >= 1000}
+              className="h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+              title="Augmenter"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {[1, 2, 3, 5].map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  setTargetValue(value);
+                  setTargetValueInput(String(value));
+                }}
+                className={`py-1.5 rounded-lg text-xs font-semibold border transition ${
+                  targetValue === value
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+
+          <label className="block text-sm font-semibold text-gray-700 mb-3">Jours actifs</label>
           <div className="grid grid-cols-7 gap-1">
             {weekDays.map((day) => {
               const selected = activeDays.includes(day.value);

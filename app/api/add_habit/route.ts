@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     if (frequency !== 'DAILY' && frequency !== 'WEEKLY') {
       return NextResponse.json(
-        { error: 'La fréquence doit être DAILY ou WEEKLY' },
+        { error: 'La fréquence doit être par jour ou par semaine' },
         { status: 400 }
       );
     }

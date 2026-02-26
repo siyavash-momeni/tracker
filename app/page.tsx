@@ -296,6 +296,7 @@ export default function Home() {
 
 function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habit: HabitWithProgress; updatingIds: Set<string>; updateHabitValue: (habit: HabitWithProgress, nextValue: number) => void; deleteHabit: (habitId: string) => void; }) {
   const isSingleDailyCheckbox = habit.frequency === 'DAILY' && habit.targetValue === 1;
+  const frequencyLabel = habit.frequency === 'DAILY' ? 'par jour' : 'par semaine';
 
   return (
     <div className={`group flex items-center justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-2xl transition-all duration-300 transform ${habit.isCompleted ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 opacity-50' : 'bg-white/70 backdrop-blur-sm border border-gray-200/50 hover:border-blue-300 hover:shadow-lg'}`}>
@@ -303,9 +304,15 @@ function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habi
         <div className={`text-3xl sm:text-4xl flex-shrink-0 ${habit.isCompleted ? 'scale-100 sm:scale-110' : 'group-hover:scale-110'}`}>{habit.emoji}</div>
         <div className="min-w-0">
           <h3 className={`font-semibold text-sm sm:text-base ${habit.isCompleted ? 'text-emerald-700 line-through opacity-70' : 'text-gray-900'}`}>{habit.title}</h3>
-          <p className="text-xs text-gray-500 mt-1">
-            {habit.currentProgress}/{habit.targetValue} · {habit.frequency === 'DAILY' ? 'Daily' : 'Weekly'}
-          </p>
+          {isSingleDailyCheckbox ? (
+            <p className="text-xs text-gray-500 mt-1">
+              {frequencyLabel} · {habit.isCompleted ? 'Validé' : 'À valider'}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500 mt-1">
+              {frequencyLabel} · {habit.currentProgress} sur {habit.targetValue}
+            </p>
+          )}
         </div>
       </div>
 
@@ -325,6 +332,11 @@ function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habi
           </button>
         ) : (
           <>
+            <SegmentedProgressRing
+              current={habit.currentProgress}
+              target={habit.targetValue}
+            />
+
             <button
               onClick={() => updateHabitValue(habit, habit.valueForDate - 1)}
               disabled={updatingIds.has(habit.id) || habit.valueForDate <= 0}
@@ -351,6 +363,90 @@ function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habi
           <Trash2 size={16} />
         </button>
       </div>
+    </div>
+  );
+}
+
+function SegmentedProgressRing({ current, target }: { current: number; target: number }) {
+  const clampedTarget = Math.max(1, target);
+  const clampedCurrent = Math.max(0, Math.min(current, clampedTarget));
+
+  const size = 42;
+  const center = size / 2;
+  const radius = 15;
+
+  if (clampedTarget > 48) {
+    const circumference = 2 * Math.PI * radius;
+    const ratio = clampedCurrent / clampedTarget;
+    const dashOffset = circumference * (1 - ratio);
+
+    return (
+      <div className="relative w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth="4"
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth="4"
+            strokeLinecap="round"
+            transform={`rotate(-90 ${center} ${center})`}
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  const segments = Array.from({ length: clampedTarget }, (_, index) => {
+    const rawStart = (360 / clampedTarget) * index;
+    const rawEnd = (360 / clampedTarget) * (index + 1);
+    const gap = Math.min(3.5, (rawEnd - rawStart) * 0.28);
+
+    const startAngle = rawStart + gap - 90;
+    const endAngle = rawEnd - gap - 90;
+    const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
+
+    const startX = center + radius * Math.cos((startAngle * Math.PI) / 180);
+    const startY = center + radius * Math.sin((startAngle * Math.PI) / 180);
+    const endX = center + radius * Math.cos((endAngle * Math.PI) / 180);
+    const endY = center + radius * Math.sin((endAngle * Math.PI) / 180);
+
+    const d = `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`;
+    const isFilled = index < clampedCurrent;
+
+    return {
+      d,
+      isFilled,
+      key: index,
+    };
+  });
+
+  return (
+    <div className="relative w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {segments.map((segment) => (
+          <path
+            key={segment.key}
+            d={segment.d}
+            fill="none"
+            stroke={segment.isFilled ? '#3b82f6' : '#e5e7eb'}
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+        ))}
+      </svg>
+      <div className="absolute w-4 h-4 rounded-full bg-white" />
     </div>
   );
 }
