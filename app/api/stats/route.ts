@@ -14,19 +14,24 @@ export async function GET(request: Request) {
     
     let dateFilter = {};
     if (range === '7d') {
-      dateFilter = { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } };
+      dateFilter = { completedDate: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } };
     }
     // ... ajoute tes autres conditions (mois, etc.)
 
-    const [totalHabits, totalCompletions] = await Promise.all([
+    const [totalHabits, completionAggregate] = await Promise.all([
       prisma.habit.count({ where: { userId } }),
-      prisma.habitCompletion.count({
+      prisma.habitCompletion.aggregate({
         where: {
           habit: { userId },
-          ...(range ? { completedAt: dateFilter } : {}) // Filtre optionnel
+          ...(range ? dateFilter : {})
+        },
+        _sum: {
+          value: true,
         },
       }),
     ]);
+
+    const totalCompletions = completionAggregate._sum.value || 0;
 
     return NextResponse.json({ totalHabits, totalCompletions });
   } catch (error) {

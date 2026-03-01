@@ -34,13 +34,13 @@ export async function GET(request: NextRequest) {
           lte: endOfRange,
         },
       },
-      select: { completedDate: true },
+      select: { completedDate: true, value: true },
     });
 
     const byDate: Record<string, number> = {};
     for (const c of completions) {
       const key = c.completedDate.toISOString().slice(0, 10);
-      byDate[key] = (byDate[key] || 0) + 1;
+      byDate[key] = (byDate[key] || 0) + c.value;
     }
 
     const days: Array<{ date: string; completions: number }> = [];

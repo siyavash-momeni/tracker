@@ -13,6 +13,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -26,6 +31,9 @@ model Habit {
   id          String                @id @default(uuid())
   title       String
   emoji       String                @default("🎯")
+  targetValue Int                   @default(1)
+  frequency   HabitFrequency        @default(DAILY)
+  activeDays  Int[]                 @default([1, 2, 3, 4, 5, 6, 7])
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
   
@@ -43,6 +51,7 @@ model HabitCompletion {
   id        String   @id @default(uuid())
   habitId   String
   habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  value     Int      @default(1)
   completedDate DateTime // Date de completion (sans l'heure)
   createdAt DateTime @default(now())
 
