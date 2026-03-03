@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Plus, AlertCircle, SmilePlus, Minus } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, AlertCircle, SmilePlus } from 'lucide-react';
 import EmojiPicker, { Theme, EmojiStyle } from 'emoji-picker-react';
 
 export default function AddHabitPage() {
@@ -13,8 +13,9 @@ export default function AddHabitPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPicker, setShowPicker] = useState(false);
-  const [targetValueInput, setTargetValueInput] = useState('1');
-  const targetInputRef = useRef<HTMLInputElement | null>(null);
+  const [showCustomTargetPicker, setShowCustomTargetPicker] = useState(false);
+  const [customTargetInput, setCustomTargetInput] = useState('1');
+  const [customTargetValue, setCustomTargetValue] = useState<number | null>(null);
 
   const weekDays = [
     { value: 1, label: 'Lun' },
@@ -46,35 +47,22 @@ export default function AddHabitPage() {
     });
   };
 
-  const updateTargetValueFromInput = (rawValue: string, commit = false) => {
-    const digitsOnly = rawValue.replace(/\D/g, '');
-
-    if (digitsOnly === '') {
-      if (commit) {
-        setTargetValue(1);
-        setTargetValueInput('1');
-      } else {
-        setTargetValueInput('');
-      }
-      return;
-    }
-
-    const normalized = String(clampTargetValue(Number(digitsOnly)));
-    setTargetValueInput(normalized);
-    setTargetValue(Number(normalized));
-  };
-
-  const adjustTargetValue = (delta: number) => {
-    const nextValue = clampTargetValue(targetValue + delta);
-    setTargetValue(nextValue);
-    setTargetValueInput(String(nextValue));
-  };
-
   const handleFrequencySelect = (value: 'DAILY' | 'WEEKLY') => {
     setFrequency(value);
-    if (window.matchMedia('(max-width: 639px)').matches) {
-      setTimeout(() => targetInputRef.current?.focus(), 0);
-    }
+  };
+
+  const openCustomTargetPicker = () => {
+    setCustomTargetInput(String(customTargetValue ?? targetValue));
+    setShowCustomTargetPicker(true);
+  };
+
+  const applyCustomTargetValue = () => {
+    const digitsOnly = customTargetInput.replace(/\D/g, '');
+    const normalized = digitsOnly === '' ? 1 : clampTargetValue(Number(digitsOnly));
+    setTargetValue(normalized);
+    setCustomTargetValue(normalized);
+    setCustomTargetInput(String(normalized));
+    setShowCustomTargetPicker(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,79 +162,93 @@ export default function AddHabitPage() {
           <label className="block text-sm font-semibold text-gray-700 mb-3">
             Fréquence {frequency === 'DAILY' ? 'par jour' : 'par semaine'}
           </label>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => adjustTargetValue(-1)}
-              disabled={targetValue <= 1}
-              className="h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
-              title="Diminuer"
-            >
-              <Minus size={16} />
-            </button>
-
-            <input
-              ref={targetInputRef}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={targetValueInput}
-              onChange={(e) => updateTargetValueFromInput(e.target.value)}
-              onBlur={() => updateTargetValueFromInput(targetValueInput, true)}
-              className="flex-1 px-3 py-2 text-center bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base font-semibold"
-            />
-
-            <button
-              type="button"
-              onClick={() => adjustTargetValue(1)}
-              disabled={targetValue >= 1000}
-              className="h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
-              title="Augmenter"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-
           <div className="grid grid-cols-4 gap-2">
-            {[1, 2, 3, 5].map((value) => (
+            {[1, 2, 3].map((value) => (
               <button
                 key={value}
                 type="button"
-                onClick={() => {
-                  setTargetValue(value);
-                  setTargetValueInput(String(value));
-                }}
+                onClick={() => setTargetValue(value)}
                 className={`py-1.5 rounded-lg text-xs font-semibold border transition ${
                   targetValue === value
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                {value}
+                {value}x
               </button>
             ))}
+            <button
+              type="button"
+              onClick={openCustomTargetPicker}
+              className={`py-1.5 rounded-lg text-xs font-semibold border transition ${
+                customTargetValue !== null && targetValue === customTargetValue
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {customTargetValue !== null ? `${customTargetValue}x` : 'Personnalisé'}
+            </button>
           </div>
 
-          <label className="block text-sm font-semibold text-gray-700 mb-3">Jours actifs</label>
-          <div className="grid grid-cols-7 gap-1">
-            {weekDays.map((day) => {
-              const selected = activeDays.includes(day.value);
-              return (
-                <button
-                  key={day.value}
-                  type="button"
-                  onClick={() => toggleActiveDay(day.value)}
-                  className={`px-1 py-2 rounded-lg text-xs font-semibold border transition ${
-                    selected
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {day.label}
-                </button>
-              );
-            })}
-          </div>
+          {showCustomTargetPicker && (
+            <>
+              <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setShowCustomTargetPicker(false)} />
+              <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                <div className="w-full max-w-sm rounded-2xl bg-white p-4 border border-gray-100 shadow-xl space-y-3">
+                  <p className="text-sm font-semibold text-gray-700">Choisir une fréquence personnalisée</p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={customTargetInput}
+                    onChange={(e) => setCustomTargetInput(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-3 py-2 text-center bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base font-semibold"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomTargetPicker(false)}
+                      className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={applyCustomTargetValue}
+                      className="px-3 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+                    >
+                      Valider
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {frequency === 'DAILY' && (
+            <>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">Jours actifs</label>
+              <div className="grid grid-cols-7 gap-1">
+                {weekDays.map((day) => {
+                  const selected = activeDays.includes(day.value);
+                  return (
+                    <button
+                      key={day.value}
+                      type="button"
+                      onClick={() => toggleActiveDay(day.value)}
+                      className={`px-1 py-2 rounded-lg text-xs font-semibold border transition ${
+                        selected
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {day.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Emoji */}

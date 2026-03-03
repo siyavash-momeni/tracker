@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader, Trash2, Plus, Minus, Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Loader, Plus, Check, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import moment, { Moment } from "moment";
 
@@ -104,7 +104,8 @@ export default function Home() {
   };
 
   const updateHabitValue = async (habit: HabitWithProgress, nextValue: number) => {
-    const normalizedNextValue = Math.max(0, Math.min(1000, nextValue));
+    const maxValueForDate = Math.max(0, habit.targetValue - (habit.currentProgress - habit.valueForDate));
+    const normalizedNextValue = Math.max(0, Math.min(maxValueForDate, nextValue));
 
     setUpdatingIds(prev => new Set(prev).add(habit.id));
     try {
@@ -296,157 +297,215 @@ export default function Home() {
 
 function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habit: HabitWithProgress; updatingIds: Set<string>; updateHabitValue: (habit: HabitWithProgress, nextValue: number) => void; deleteHabit: (habitId: string) => void; }) {
   const isSingleDailyCheckbox = habit.frequency === 'DAILY' && habit.targetValue === 1;
+  const shouldShowSegmentedBar = !isSingleDailyCheckbox && habit.targetValue > 1;
   const frequencyLabel = habit.frequency === 'DAILY' ? 'par jour' : 'par semaine';
+  const [showMenu, setShowMenu] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editValueInput, setEditValueInput] = useState(String(habit.valueForDate));
+  const isUpdating = updatingIds.has(habit.id);
+  const maxValueForDate = Math.max(0, habit.targetValue - (habit.currentProgress - habit.valueForDate));
+  const hasCompletionForSelectedDate = habit.valueForDate > 0;
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const editDialogRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showMenu && !showEditDialog) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (showEditDialog) {
+        if (editDialogRef.current && !editDialogRef.current.contains(target)) {
+          setShowEditDialog(false);
+        }
+        return;
+      }
+
+      if (showMenu) {
+        const clickedMenu = menuRef.current?.contains(target);
+        const clickedMenuButton = menuButtonRef.current?.contains(target);
+        if (!clickedMenu && !clickedMenuButton) {
+          setShowMenu(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [showMenu, showEditDialog]);
+
+  useEffect(() => {
+    if (!showEditDialog) return;
+
+    setEditValueInput((previous) => {
+      const digitsOnly = previous.replace(/\D/g, '');
+      if (digitsOnly === '') return '0';
+      const clamped = Math.max(0, Math.min(maxValueForDate, Number(digitsOnly)));
+      return String(clamped);
+    });
+  }, [maxValueForDate, showEditDialog]);
+
+  const openEditDialog = () => {
+    setEditValueInput(String(habit.valueForDate));
+    setShowMenu(false);
+    setShowEditDialog(true);
+  };
+
+  const submitEditValue = () => {
+    const digitsOnly = editValueInput.replace(/\D/g, '');
+    const nextValue = digitsOnly === '' ? 0 : Math.max(0, Math.min(maxValueForDate, Number(digitsOnly)));
+    updateHabitValue(habit, nextValue);
+    setShowEditDialog(false);
+  };
 
   return (
-    <div className={`group grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-2xl transition-all duration-300 transform ${habit.isCompleted ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 opacity-50' : 'bg-white/70 backdrop-blur-sm border border-gray-200/50 hover:border-blue-300 hover:shadow-lg'}`}>
-      <div className="flex items-center justify-start min-w-0">
-        {isSingleDailyCheckbox ? (
+    <div className={`group relative p-3 sm:p-4 rounded-lg sm:rounded-2xl transition-all duration-300 ${(showMenu || showEditDialog) ? 'z-[120]' : ''} ${habit.isCompleted ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 opacity-70' : 'bg-white/70 backdrop-blur-sm border border-gray-200/50 hover:border-blue-300 hover:shadow-lg'}`}>
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className={`text-3xl sm:text-4xl ${habit.isCompleted ? 'scale-100 sm:scale-110' : 'group-hover:scale-110'} shrink-0`}>{habit.emoji}</div>
+            <div className="min-w-0">
+              <h3 className={`font-semibold text-sm sm:text-base truncate ${habit.isCompleted ? 'text-emerald-700 line-through opacity-80' : 'text-gray-900'}`}>{habit.title}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {isSingleDailyCheckbox
+                  ? `${frequencyLabel} · ${habit.isCompleted ? 'Validé' : 'À valider'}`
+                  : `${frequencyLabel} · ${habit.currentProgress}/${habit.targetValue}`}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => updateHabitValue(habit, habit.isCompleted ? 0 : 1)}
-            disabled={updatingIds.has(habit.id)}
-            className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border-2 transition ${
-              habit.isCompleted
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 border-emerald-500 text-white'
-                : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-500'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-            title={habit.isCompleted ? 'Décocher' : 'Cocher'}
+            ref={menuButtonRef}
+            type="button"
+            onClick={() => setShowMenu((prev) => !prev)}
+            disabled={isUpdating}
+            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Plus d'actions"
           >
-            {updatingIds.has(habit.id) ? <Loader size={14} className="animate-spin" /> : habit.isCompleted ? <Check size={14} /> : null}
+            <MoreVertical size={16} />
           </button>
-        ) : (
-          <>
-            <SegmentedProgressRing
-              current={habit.currentProgress}
-              target={habit.targetValue}
-            />
 
+          {isSingleDailyCheckbox ? (
             <button
-              onClick={() => updateHabitValue(habit, habit.valueForDate - 1)}
-              disabled={updatingIds.has(habit.id) || habit.valueForDate <= 0}
-              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Réduire la progression"
+              onClick={() => updateHabitValue(habit, habit.isCompleted ? 0 : 1)}
+              disabled={isUpdating}
+              className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border-2 transition ${
+                habit.isCompleted
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 border-emerald-500 text-white'
+                  : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-500'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              title={habit.isCompleted ? 'Décocher' : 'Cocher'}
             >
-              <Minus size={14} />
+              {isUpdating ? <Loader size={14} className="animate-spin" /> : habit.isCompleted ? <Check size={14} /> : null}
             </button>
-
-            <span className="min-w-8 text-center text-sm font-semibold text-gray-700">{habit.valueForDate}</span>
-
+          ) : (
             <button
               onClick={() => updateHabitValue(habit, habit.valueForDate + 1)}
-              disabled={updatingIds.has(habit.id)}
-              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Augmenter la progression"
+              disabled={isUpdating || habit.valueForDate >= maxValueForDate}
+              className={`flex items-center justify-center px-2.5 sm:px-3 h-8 sm:h-9 rounded-lg sm:rounded-xl border-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold transition ${
+                hasCompletionForSelectedDate
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              title="Ajouter une complétion"
             >
-              {updatingIds.has(habit.id) ? <Loader size={14} className="animate-spin" /> : <Plus size={14} />}
+              {isUpdating ? <Loader size={14} className="animate-spin" /> : '+1'}
             </button>
-          </>
-        )}
+          )}
+        </div>
+
       </div>
 
-      <div className="min-w-0 text-center px-1 sm:px-2">
-        <div className={`text-3xl sm:text-4xl ${habit.isCompleted ? 'scale-100 sm:scale-110' : 'group-hover:scale-110'} inline-block`}>{habit.emoji}</div>
-        <h3 className={`font-semibold text-sm sm:text-base mt-1 ${habit.isCompleted ? 'text-emerald-700 line-through opacity-70' : 'text-gray-900'}`}>{habit.title}</h3>
-        {isSingleDailyCheckbox ? (
-          <p className="text-xs text-gray-500 mt-1">
-            {frequencyLabel} · {habit.isCompleted ? 'Validé' : 'À valider'}
-          </p>
-        ) : (
-          <p className="text-xs text-gray-500 mt-1">
-            {frequencyLabel} · {habit.currentProgress} sur {habit.targetValue}
-          </p>
-        )}
-      </div>
+      {shouldShowSegmentedBar && (
+        <SegmentedCompletionBar current={habit.currentProgress} target={habit.targetValue} />
+      )}
 
-      <div className="flex items-center justify-end min-w-0">
-        <button onClick={() => deleteHabit(habit.id)} disabled={updatingIds.has(habit.id)} className="p-1.5 sm:p-2.5 bg-red-50 text-red-600 rounded-lg sm:rounded-xl hover:bg-red-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed" title="Supprimer l'habitude">
-          <Trash2 size={16} />
-        </button>
-      </div>
+      {showMenu && (
+        <>
+          <div className="fixed inset-0 z-[140]" />
+          <div ref={menuRef} className="absolute right-3 sm:right-4 top-11 z-[150] w-52 rounded-xl border border-gray-200 bg-white shadow-lg p-1.5">
+            <button
+              type="button"
+              onClick={openEditDialog}
+              className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Modifier les complétions
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowMenu(false);
+                deleteHabit(habit.id);
+              }}
+              className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
+            >
+              Supprimer l'habitude
+            </button>
+          </div>
+        </>
+      )}
+
+      {showEditDialog && (
+        <>
+          <div className="fixed inset-0 z-[160] bg-black/40" />
+          <div className="fixed inset-0 z-[170] flex items-center justify-center px-4">
+            <div ref={editDialogRef} className="w-full max-w-sm rounded-2xl bg-white p-4 border border-gray-100 shadow-xl space-y-3">
+              <p className="text-sm font-semibold text-gray-700">Modifier le nombre de complétions</p>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={editValueInput}
+                onChange={(e) => setEditValueInput(e.target.value.replace(/\D/g, ''))}
+                className="w-full px-3 py-2 text-center bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base font-semibold"
+              />
+              <p className="text-xs text-gray-500 text-center">Max: {maxValueForDate}</p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowEditDialog(false)}
+                  className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={submitEditValue}
+                  className="px-3 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+                >
+                  Valider
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function SegmentedProgressRing({ current, target }: { current: number; target: number }) {
-  const clampedTarget = Math.max(1, target);
-  const clampedCurrent = Math.max(0, Math.min(current, clampedTarget));
-
-  const size = 42;
-  const center = size / 2;
-  const radius = 15;
-
-  if (clampedTarget > 48) {
-    const circumference = 2 * Math.PI * radius;
-    const ratio = clampedCurrent / clampedTarget;
-    const dashOffset = circumference * (1 - ratio);
-
-    return (
-      <div className="relative w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          <circle
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="none"
-            stroke="#e5e7eb"
-            strokeWidth="4"
-          />
-          <circle
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="4"
-            strokeLinecap="round"
-            transform={`rotate(-90 ${center} ${center})`}
-            strokeDasharray={circumference}
-            strokeDashoffset={dashOffset}
-          />
-        </svg>
-      </div>
-    );
-  }
-
-  const segments = Array.from({ length: clampedTarget }, (_, index) => {
-    const rawStart = (360 / clampedTarget) * index;
-    const rawEnd = (360 / clampedTarget) * (index + 1);
-    const gap = Math.min(3.5, (rawEnd - rawStart) * 0.28);
-
-    const startAngle = rawStart + gap - 90;
-    const endAngle = rawEnd - gap - 90;
-    const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
-
-    const startX = center + radius * Math.cos((startAngle * Math.PI) / 180);
-    const startY = center + radius * Math.sin((startAngle * Math.PI) / 180);
-    const endX = center + radius * Math.cos((endAngle * Math.PI) / 180);
-    const endY = center + radius * Math.sin((endAngle * Math.PI) / 180);
-
-    const d = `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`;
-    const isFilled = index < clampedCurrent;
-
-    return {
-      d,
-      isFilled,
-      key: index,
-    };
-  });
+function SegmentedCompletionBar({ current, target }: { current: number; target: number }) {
+  const safeTarget = Math.max(2, target);
+  const filledCount = Math.max(0, Math.min(current, safeTarget));
 
   return (
-    <div className="relative w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {segments.map((segment) => (
-          <path
-            key={segment.key}
-            d={segment.d}
-            fill="none"
-            stroke={segment.isFilled ? '#3b82f6' : '#e5e7eb'}
-            strokeWidth="4"
-            strokeLinecap="round"
-          />
-        ))}
-      </svg>
-      <div className="absolute w-4 h-4 rounded-full bg-white" />
+    <div className="mt-3">
+      <div className="flex items-center gap-1">
+        {Array.from({ length: safeTarget }, (_, index) => {
+          const isFilled = index < filledCount;
+          return (
+            <span
+              key={index}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                isFilled ? 'bg-blue-600' : 'bg-gray-200'
+              }`}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

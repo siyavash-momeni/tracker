@@ -22,9 +22,11 @@ model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
   email     String   @unique
+  weeklyEmailEnabled Boolean  @default(true)
   createdAt DateTime @default(now())
   notes     Notes[]
   habits    Habit[]  // Relation vers les habitudes
+  emailDispatchLogs EmailDispatchLog[]
 }
 
 model Habit {
@@ -66,4 +68,16 @@ model Notes {
   createdAt DateTime @default(now())
   userId    String
   user      User     @relation(fields: [userId], references: [clerkId])
+}
+
+model EmailDispatchLog {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  weekStartDate  DateTime
+  status         String   @default("SENT")
+  sentAt         DateTime @default(now())
+
+  @@unique([userId, weekStartDate])
+  @@index([weekStartDate])
 }
