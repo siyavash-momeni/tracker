@@ -304,6 +304,7 @@ function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habi
   const [editValueInput, setEditValueInput] = useState(String(habit.valueForDate));
   const isUpdating = updatingIds.has(habit.id);
   const maxValueForDate = Math.max(0, habit.targetValue - (habit.currentProgress - habit.valueForDate));
+  const hasCompletionForSelectedDate = habit.valueForDate > 0;
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const editDialogRef = useRef<HTMLDivElement | null>(null);
@@ -404,7 +405,11 @@ function HabitCard({ habit, updatingIds, updateHabitValue, deleteHabit }: { habi
             <button
               onClick={() => updateHabitValue(habit, habit.valueForDate + 1)}
               disabled={isUpdating || habit.valueForDate >= maxValueForDate}
-              className="flex items-center justify-center px-2.5 sm:px-3 h-8 sm:h-9 rounded-lg sm:rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold"
+              className={`flex items-center justify-center px-2.5 sm:px-3 h-8 sm:h-9 rounded-lg sm:rounded-xl border-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold transition ${
+                hasCompletionForSelectedDate
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
               title="Ajouter une complétion"
             >
               {isUpdating ? <Loader size={14} className="animate-spin" /> : '+1'}
