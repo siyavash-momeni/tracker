@@ -60,8 +60,8 @@ function buildWeeklyEmailContent(stats: WeeklyEmailStats, weekStartDate: Date) {
   const weekStartLabel = weekStartDate.toISOString().slice(0, 10);
   const subject =
     totalCheckIns > 0
-      ? `🔥 Belle progression cette semaine ! Ton récap Trackers (${weekStartLabel})`
-      : `🚀 Nouvelle semaine, nouveau départ — ton récap Trackers (${weekStartLabel})`;
+      ? `🔥 Belle progression cette semaine ! Ton récap Tracker (${weekStartLabel})`
+      : `🚀 Nouvelle semaine, nouveau départ — ton récap Tracker (${weekStartLabel})`;
   const ctaUrl = 'https://trackersiya.com';
   const encouragement =
     completionRate >= 70
@@ -69,7 +69,7 @@ function buildWeeklyEmailContent(stats: WeeklyEmailStats, weekStartDate: Date) {
       : 'Un petit pas aujourd’hui vaut mieux que rien : tu peux relancer la machine dès maintenant 💪';
 
   const text = [
-    `Ton récap hebdomadaire Kusari (semaine du ${weekStartLabel})`,
+    `Ton récap hebdomadaire Tracker (semaine du ${weekStartLabel})`,
     '',
     'Tes stats :',
     `- Habitudes actives : ${totalHabits}`,
@@ -85,7 +85,7 @@ function buildWeeklyEmailContent(stats: WeeklyEmailStats, weekStartDate: Date) {
 
   const html = `
       <div>
-        <h2>Ton récap hebdomadaire Trackers</h2>
+        <h2>Ton récap hebdomadaire Tracker</h2>
         <p>Semaine du <strong>${weekStartLabel}</strong></p>
 
         <h3>📊 Tes stats</h3>
