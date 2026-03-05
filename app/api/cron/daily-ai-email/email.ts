@@ -67,12 +67,20 @@ export async function sendDailyAiEmail(params: {
 
   const { resend, to, copy } = params;
   const ctaUrl = `https://trackersiya.com${copy.ctaPath}`;
+  const contentSentences = copy.content
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
 
   const text = [copy.content, '', `${copy.ctaLabel}: ${ctaUrl}`].join('\n');
 
   const html = `
     <div>
-      <p>${copy.content}</p>
+      <h2>Ton rappel quotidien Tracker</h2>
+
+      <h3>✨ Ton point du jour</h3>
+      ${contentSentences.map((sentence) => `<p>${sentence}</p>`).join('')}
+
       <p>
         <a href="${ctaUrl}" target="_blank" rel="noopener noreferrer"><strong>${copy.ctaLabel}</strong></a>
       </p>

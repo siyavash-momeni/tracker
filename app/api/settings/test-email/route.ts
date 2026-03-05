@@ -4,8 +4,17 @@ import { NextResponse } from 'next/server';
 import { GET as runWeeklyCron } from '@/app/api/cron/weekly-email/route';
 import { GET as runDailyAiCron } from '@/app/api/cron/daily-ai-email/route';
 
+function readBooleanEnv(value: string | undefined, fallback = false) {
+  if (!value) return fallback;
+  return value.toLowerCase() === 'true';
+}
+
 export async function POST(request: Request) {
   try {
+    if (!readBooleanEnv(process.env.SHOW_EMAIL_TEST_ACTIONS, false)) {
+      return NextResponse.json({ error: 'Tests d\'envoi désactivés' }, { status: 403 });
+    }
+
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });

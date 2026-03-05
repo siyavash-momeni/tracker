@@ -2,6 +2,11 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/prisma.client';
 import { NextResponse } from 'next/server';
 
+function readBooleanEnv(value: string | undefined, fallback = false) {
+  if (!value) return fallback;
+  return value.toLowerCase() === 'true';
+}
+
 export async function GET() {
   try {
     const { userId } = await auth();
@@ -29,6 +34,7 @@ export async function GET() {
         email: user.email,
         weeklyEmailEnabled: user.weeklyEmailEnabled,
         dailyEmailEnabled: user.dailyEmailEnabled,
+        showEmailTestActions: readBooleanEnv(process.env.SHOW_EMAIL_TEST_ACTIONS, false),
       },
     });
   } catch (error) {
