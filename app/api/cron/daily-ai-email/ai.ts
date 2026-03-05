@@ -28,8 +28,18 @@ function normalizeLine(value: string | undefined, fallback: string, maxLength: n
   return normalized;
 }
 
+function normalizeRequiredLine(value: string | undefined, maxLength: number): string {
+  const normalized = (value || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    throw new Error('OPENAI_INVALID_OUTPUT');
+  }
+  if (normalized.length > maxLength) return normalized.slice(0, maxLength).trim();
+  return normalized;
+}
+
 type DailyAiStructuredOutput = {
   subject?: string;
+  factualSentence?: string;
   valorizationSentence?: string;
   encouragementSentence?: string;
   ctaLabel?: string;
@@ -47,17 +57,13 @@ const FORBIDDEN_PATTERNS = [
   /faute/i,
 ];
 
-function hasForbiddenTone(text: string) {
-  return FORBIDDEN_PATTERNS.some((pattern) => pattern.test(text));
-}
-
-function isSentenceCountValid(text: string, min: number, max: number) {
+function countSentences(text: string) {
   const sentences = text
     .split(/(?<=[.!?])\s+/)
     .map((sentence) => sentence.trim())
     .filter(Boolean);
 
-  return sentences.length >= min && sentences.length <= max;
+  return sentences.length;
 }
 
 function keepMaxSentences(content: string, maxSentences: number) {
@@ -70,12 +76,21 @@ function keepMaxSentences(content: string, maxSentences: number) {
   return sentences.slice(0, maxSentences).join(' ');
 }
 
+function hasForbiddenTone(text: string) {
+  return FORBIDDEN_PATTERNS.some((pattern) => pattern.test(text));
+}
+
 function buildFactualSentence(stats: DailyEmailStats): string {
   if (stats.plannedHabits === 0) {
     return 'Hier, aucune habitude n’était planifiée.';
   }
 
-  return `Hier, ${stats.completedHabits}/${stats.plannedHabits} habitude(s) prévue(s) ont eu une progression, avec ${stats.totalCheckIns} check-in(s) et ${stats.completionRate}% de complétion.`;
+  const habitWord = stats.plannedHabits > 1 ? 'habitudes' : 'habitude';
+  const plannedAgreement = stats.plannedHabits > 1 ? 'prévues' : 'prévue';
+  const progressVerb = stats.completedHabits > 1 ? 'ont eu' : 'a eu';
+  const checkInWord = stats.totalCheckIns > 1 ? 'check-ins' : 'check-in';
+
+  return `Hier, ${stats.completedHabits}/${stats.plannedHabits} ${habitWord} ${plannedAgreement} ${progressVerb} une progression, avec ${stats.totalCheckIns} ${checkInWord} et ${stats.completionRate}% de complétion.`;
 }
 
 function getDailyCase(stats: DailyEmailStats) {
@@ -108,6 +123,7 @@ function fallbackDailyCopy(stats: DailyEmailStats): DailyEmailCopy {
     content: `${factualSentence} ${valorizationSentence} ${progressionSentence}`,
     ctaLabel: 'Ouvrir Tracker /today',
     ctaPath: '/today',
+    source: 'fallback',
   };
 }
 
@@ -161,25 +177,26 @@ Formulations acceptables (style) :
 - "Tu te rapproches de ton objectif."
 
 Contraintes de sortie :
-- N'écris PAS la phrase factuelle (elle est déjà gérée par le système)
-- Produis uniquement 2 phrases courtes :
-  1) valorizationSentence
-  2) encouragementSentence
+- Produis exactement 3 phrases courtes :
+  1) factualSentence (avec statistiques de la veille)
+  2) valorizationSentence
+  3) encouragementSentence
 - Utilise uniquement les chiffres fournis, sans rien inventer
 - Pas de liste, pas de markdown
 - CTA clair vers /today
-- Réponds strictement en JSON avec : subject, valorizationSentence, encouragementSentence, ctaLabel, ctaPath`,
+- Réponds strictement en JSON avec : subject, factualSentence, valorizationSentence, encouragementSentence, ctaLabel, ctaPath`,
           },
           {
             role: 'user',
             content: JSON.stringify({
               instruction:
-                'Tu dois produire un sujet motivant + 2 phrases (valorisation + encouragement progression) + un CTA vers /today. La phrase factuelle sera ajoutée automatiquement côté système.',
+                'Tu dois produire un sujet motivant + 3 phrases (factuel, valorisation, encouragement progression) + un CTA vers /today. La phrase factuelle doit reprendre fidèlement les stats fournies.',
               dailyCase: getDailyCase(stats),
               toneReferenceExamples: [
                 {
                   case: 'EXCELLENTE JOURNÉE',
                   subject: 'Belle constance hier 👏',
+                  factualSentence: 'Hier, tu as complété 5 habitudes sur 5 prévues.',
                   valorizationSentence:
                     'Tu maintiens une régularité solide et tu construis une vraie dynamique.',
                   encouragementSentence:
@@ -190,6 +207,7 @@ Contraintes de sortie :
                 {
                   case: 'BONNE PROGRESSION',
                   subject: 'Tu avances 👏',
+                  factualSentence: 'Hier, tu as complété 3 habitudes sur 4 prévues (75%).',
                   valorizationSentence:
                     'Tu restes aligné avec ton objectif et tu construis une constance utile.',
                   encouragementSentence:
@@ -200,6 +218,7 @@ Contraintes de sortie :
                 {
                   case: 'JOURNÉE MOYENNE',
                   subject: 'Une étape de plus vers la régularité',
+                  factualSentence: 'Hier, tu as complété 2 habitudes sur 5 prévues.',
                   valorizationSentence: 'Chaque action compte, et tu as maintenu le mouvement.',
                   encouragementSentence:
                     'Aujourd’hui est une nouvelle opportunité de renforcer cette dynamique.',
@@ -209,6 +228,7 @@ Contraintes de sortie :
                 {
                   case: 'FAIBLE ACTIVITÉ',
                   subject: 'On continue le rythme 💪',
+                  factualSentence: 'Hier, tu as validé 1 habitude.',
                   valorizationSentence:
                     'Tu restes engagé, même les petites actions construisent la constance.',
                   encouragementSentence:
@@ -219,6 +239,7 @@ Contraintes de sortie :
                 {
                   case: 'AUCUNE COMPLÉTION',
                   subject: 'Nouvelle journée, nouveau départ',
+                  factualSentence: 'Hier n’a pas enregistré d’habitudes complétées.',
                   valorizationSentence:
                     'Chaque jour est une occasion de repartir sur de bonnes bases.',
                   encouragementSentence:
@@ -242,34 +263,28 @@ Contraintes de sortie :
 
     const parsed = JSON.parse(content) as DailyAiStructuredOutput;
 
-    const factualSentence = buildFactualSentence(stats);
-    const safeValorization = normalizeLine(
-      parsed.valorizationSentence,
-      'Tu avances et tu construis une régularité solide.',
-      220
-    );
-    const safeEncouragement = normalizeLine(
-      parsed.encouragementSentence,
-      'Aujourd’hui, une action simple suffit pour renforcer la dynamique.',
-      220
-    );
+    const factualSentence = normalizeRequiredLine(parsed.factualSentence, 260);
+    const safeValorization = normalizeRequiredLine(parsed.valorizationSentence, 220);
+    const safeEncouragement = normalizeRequiredLine(parsed.encouragementSentence, 220);
     const contentWithFact = `${factualSentence} ${safeValorization} ${safeEncouragement}`;
     const cappedContent = keepMaxSentences(contentWithFact, 4);
-    const safeCtaLabel = normalizeLine(parsed.ctaLabel, fallback.ctaLabel, 120);
+    const safeCtaLabel = normalizeRequiredLine(parsed.ctaLabel, 120);
+    const safeSubject = normalizeRequiredLine(parsed.subject, 120);
 
-    if (!isSentenceCountValid(cappedContent, 3, 4)) {
-      return fallback;
+    if (countSentences(cappedContent) < 3) {
+      throw new Error('OPENAI_INVALID_OUTPUT');
     }
 
-    if (hasForbiddenTone(`${parsed.subject || ''} ${cappedContent} ${safeCtaLabel}`)) {
-      return fallback;
+    if (hasForbiddenTone(`${safeSubject} ${cappedContent} ${safeCtaLabel}`)) {
+      throw new Error('OPENAI_INVALID_OUTPUT');
     }
 
     return {
-      subject: ensureCoherentSubject(parsed.subject || fallback.subject, stats.dispatchDateKey),
+      subject: ensureCoherentSubject(safeSubject, stats.dispatchDateKey),
       content: cappedContent,
       ctaLabel: safeCtaLabel,
       ctaPath: '/today',
+      source: 'ia',
     };
   } catch (error) {
     console.warn('[DAILY_AI_EMAIL] OpenAI fallback used', {

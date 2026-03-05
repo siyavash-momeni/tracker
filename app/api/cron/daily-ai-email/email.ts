@@ -66,7 +66,7 @@ export async function sendDailyAiEmail(params: {
   }
 
   const { resend, to, copy } = params;
-  const ctaUrl = `https://trackersiya.com${copy.ctaPath}`;
+  const ctaUrl = 'https://trackersiya.com';
   const contentSentences = copy.content
     .split(/(?<=[.!?])\s+/)
     .map((sentence) => sentence.trim())
@@ -91,7 +91,7 @@ export async function sendDailyAiEmail(params: {
     resend,
     from: emailFrom,
     to,
-    subject: copy.subject,
+    subject: `${copy.subject} (${copy.source})`,
     text,
     html,
   });

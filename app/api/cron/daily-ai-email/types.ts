@@ -12,4 +12,5 @@ export type DailyEmailCopy = {
   content: string;
   ctaLabel: string;
   ctaPath: '/today';
+  source: 'ia' | 'fallback';
 };
