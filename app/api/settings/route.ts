@@ -25,6 +25,7 @@ export async function GET() {
         email: true,
         weeklyEmailEnabled: true,
         dailyEmailEnabled: true,
+        dailyPushEnabled: true,
       },
     });
 
@@ -34,6 +35,7 @@ export async function GET() {
         email: user.email,
         weeklyEmailEnabled: user.weeklyEmailEnabled,
         dailyEmailEnabled: user.dailyEmailEnabled,
+        dailyPushEnabled: user.dailyPushEnabled,
         showEmailTestActions: readBooleanEnv(process.env.SHOW_EMAIL_TEST_ACTIONS, false),
       },
     });
@@ -51,7 +53,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const payload: { weeklyEmailEnabled?: boolean; dailyEmailEnabled?: boolean } = {};
+    const payload: { weeklyEmailEnabled?: boolean; dailyEmailEnabled?: boolean; dailyPushEnabled?: boolean } = {};
 
     if (typeof body.weeklyEmailEnabled === 'boolean') {
       payload.weeklyEmailEnabled = body.weeklyEmailEnabled;
@@ -59,6 +61,10 @@ export async function PATCH(request: Request) {
 
     if (typeof body.dailyEmailEnabled === 'boolean') {
       payload.dailyEmailEnabled = body.dailyEmailEnabled;
+    }
+
+    if (typeof body.dailyPushEnabled === 'boolean') {
+      payload.dailyPushEnabled = body.dailyPushEnabled;
     }
 
     if (Object.keys(payload).length === 0) {
@@ -71,6 +77,7 @@ export async function PATCH(request: Request) {
       select: {
         weeklyEmailEnabled: true,
         dailyEmailEnabled: true,
+        dailyPushEnabled: true,
       },
     });
 

@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.4",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "date-fns": "^4.1.0",
     "emoji-picker-react": "^4.18.0",
     "lucide-react": "^0.575.0",
@@ -20,7 +21,8 @@
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",
     "resend": "^6.9.3",
-    "svix": "^1.85.0"
+    "svix": "^1.85.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@prisma/client": "^6.19.2",
@@ -28,6 +30,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "^10.0.0",
     "eslint-config-next": "^0.2.4",
     "prisma": "^6.19.2",
