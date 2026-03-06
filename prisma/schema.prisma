@@ -24,11 +24,14 @@ model User {
   email     String   @unique
   weeklyEmailEnabled Boolean  @default(true)
   dailyEmailEnabled  Boolean  @default(true)
+  dailyPushEnabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   notes     Notes[]
   habits    Habit[]  // Relation vers les habitudes
   emailDispatchLogs EmailDispatchLog[]
   dailyEmailDispatchLogs DailyEmailDispatchLog[]
+  pushSubscriptions PushSubscription[]
+  dailyPushDispatchLogs DailyPushDispatchLog[]
 }
 
 model Habit {
@@ -85,6 +88,38 @@ model EmailDispatchLog {
 }
 
 model DailyEmailDispatchLog {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  dispatchDate DateTime
+  status       String   @default("SENT")
+  sentAt       DateTime?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, dispatchDate])
+  @@index([dispatchDate])
+}
+
+model PushSubscription {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  endpoint      String   @unique
+  p256dh        String
+  auth          String
+  expirationTime DateTime?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastSuccessAt DateTime?
+  lastFailureAt DateTime?
+  failureReason String?
+
+  @@index([userId])
+}
+
+model DailyPushDispatchLog {
   id           String   @id @default(uuid())
   userId       String
   user         User     @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
