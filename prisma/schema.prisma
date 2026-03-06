@@ -23,10 +23,12 @@ model User {
   clerkId   String   @unique
   email     String   @unique
   weeklyEmailEnabled Boolean  @default(true)
+  dailyEmailEnabled  Boolean  @default(true)
   createdAt DateTime @default(now())
   notes     Notes[]
   habits    Habit[]  // Relation vers les habitudes
   emailDispatchLogs EmailDispatchLog[]
+  dailyEmailDispatchLogs DailyEmailDispatchLog[]
 }
 
 model Habit {
@@ -80,4 +82,18 @@ model EmailDispatchLog {
 
   @@unique([userId, weekStartDate])
   @@index([weekStartDate])
+}
+
+model DailyEmailDispatchLog {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  dispatchDate DateTime
+  status       String   @default("SENT")
+  sentAt       DateTime?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, dispatchDate])
+  @@index([dispatchDate])
 }

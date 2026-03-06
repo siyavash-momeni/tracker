@@ -35,20 +35,64 @@ export async function GET(request: Request) {
 
   if (testTo) {
     try {
-      const messageId = await sendWeeklyEmail({
-        resend,
-        to: testTo,
-        weekStartDate,
-        stats: {
-          totalHabits: 4,
-          totalCheckIns: 12,
-          completionRate: 75,
-          goalsReached: 3,
-          bestStreak: 5,
-        },
+      const testUser = await prisma.user.findUnique({
+        where: { email: testTo },
+        select: { clerkId: true, email: true },
       });
 
-      return NextResponse.json({ ok: true, mode: 'test', sentTo: testTo, messageId });
+      if (!testUser) {
+        return NextResponse.json({ error: 'Utilisateur test introuvable' }, { status: 404 });
+      }
+
+      const [habits, weeklyCompletions, allCompletions] = await Promise.all([
+        prisma.habit.findMany({
+          where: { userId: testUser.clerkId },
+          select: {
+            id: true,
+            targetValue: true,
+            frequency: true,
+            activeDays: true,
+          },
+        }),
+        prisma.habitCompletion.findMany({
+          where: {
+            habit: { userId: testUser.clerkId },
+            completedDate: {
+              gte: weekStartDate,
+              lt: weekEndDate,
+            },
+          },
+          select: {
+            habitId: true,
+            value: true,
+          },
+        }),
+        prisma.habitCompletion.findMany({
+          where: {
+            habit: { userId: testUser.clerkId },
+          },
+          select: {
+            completedDate: true,
+          },
+        }),
+      ]);
+
+      const bestStreak = computeBestStreakFromDates(allCompletions.map((completion) => completion.completedDate));
+
+      const stats = buildWeeklyStats({
+        habits,
+        weeklyCompletions,
+        bestStreak,
+      });
+
+      const messageId = await sendWeeklyEmail({
+        resend,
+        to: testUser.email,
+        weekStartDate,
+        stats,
+      });
+
+      return NextResponse.json({ ok: true, mode: 'test', sentTo: testUser.email, weekStartDate: weekStartDate.toISOString(), stats, messageId });
     } catch (error) {
       console.error('[CRON_WEEKLY_EMAIL][CRITICAL] Test email send failed', { testTo, error });
       return NextResponse.json({ error: 'Test email send failed' }, { status: 500 });

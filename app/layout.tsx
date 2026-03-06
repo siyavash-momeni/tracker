@@ -60,15 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <NavItem icon={<Home size={20} className="sm:w-6 sm:h-6" />} label="Accueil" href="/" active={isActive('/')} />
               <NavItem icon={<PlusCircle size={20} className="sm:w-6 sm:h-6" />} label="Ajouter" href="/add_habit" active={isActive('/add_habit')} />
               <NavItem icon={<BarChart2 size={20} className="sm:w-6 sm:h-6" />} label="Stats" href="/stats" active={isActive('/stats')} />
-
-              <div className="flex flex-col items-center justify-center gap-0.5 w-full py-2 px-2 sm:px-3 rounded-lg sm:rounded-xl text-gray-400 bg-gray-100/50 cursor-not-allowed pointer-events-none select-none">
-                <div className="p-1.5 sm:p-2 rounded-lg bg-gray-100">
-                  <Settings size={20} className="sm:w-6 sm:h-6" />
-                </div>
-                <span className="text-[8px] sm:text-[9px] font-semibold tracking-tight">
-                  Paramètres
-                </span>
-              </div>
+              <NavItem icon={<Settings size={20} className="sm:w-6 sm:h-6" />} label="Paramètres" href="/settings" active={isActive('/settings')} />
             </nav>
 
           </div>
