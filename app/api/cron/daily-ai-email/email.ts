@@ -77,8 +77,6 @@ export async function sendDailyAiEmail(params: {
   const html = `
     <div>
       <h2>Ton rappel quotidien Tracker</h2>
-
-      <h3>✨ Ton point du jour</h3>
       ${contentSentences.map((sentence) => `<p>${sentence}</p>`).join('')}
 
       <p>
