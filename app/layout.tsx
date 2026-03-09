@@ -18,6 +18,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <ClerkProvider>
       <html lang="fr">
+        <head>
+          <link rel="manifest" href="/manifest.webmanifest" />
+          <meta name="theme-color" content="#2563eb" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        </head>
         <body className="antialiased app-background">
           
           {/* Container principal */}
