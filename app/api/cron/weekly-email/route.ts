@@ -8,7 +8,7 @@ import { buildWeeklyStats } from './stats';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const cronSecret = process.env.CRON_WEEKLY_EMAIL_SECRET;
+  const cronSecret = process.env.CRON_WEEKLY_EMAIL_SECRET || process.env.CRON_SECRET;
   const providedSecret = getCronSecretFromRequest(request);
 
   if (!cronSecret || providedSecret !== cronSecret) {

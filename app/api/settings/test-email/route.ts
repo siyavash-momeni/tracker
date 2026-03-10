@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     if (type === 'weekly') {
-      const secret = process.env.CRON_WEEKLY_EMAIL_SECRET;
+      const secret = process.env.CRON_WEEKLY_EMAIL_SECRET || process.env.CRON_SECRET;
       if (!secret) {
         return NextResponse.json({ error: 'CRON_WEEKLY_EMAIL_SECRET manquant' }, { status: 500 });
       }
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     }
 
     if (type === 'daily') {
-      const secret = process.env.CRON_DAILY_AI_EMAIL_SECRET || process.env.CRON_WEEKLY_EMAIL_SECRET;
+      const secret = process.env.CRON_DAILY_AI_EMAIL_SECRET || process.env.CRON_SECRET || process.env.CRON_WEEKLY_EMAIL_SECRET;
       if (!secret) {
         return NextResponse.json({ error: 'Secret cron daily manquant' }, { status: 500 });
       }
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       return NextResponse.json(data, { status: result.status });
     }
 
-    const secret = process.env.CRON_DAILY_PUSH_SECRET || process.env.CRON_DAILY_AI_EMAIL_SECRET;
+    const secret = process.env.CRON_DAILY_PUSH_SECRET || process.env.CRON_SECRET || process.env.CRON_DAILY_AI_EMAIL_SECRET;
     if (!secret) {
       return NextResponse.json({ error: 'Secret cron push manquant' }, { status: 500 });
     }

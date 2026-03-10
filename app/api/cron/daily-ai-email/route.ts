@@ -40,7 +40,7 @@ async function withPrismaRetry<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 export async function GET(request: Request) {
-  const cronSecret = process.env.CRON_DAILY_AI_EMAIL_SECRET || process.env.CRON_WEEKLY_EMAIL_SECRET;
+  const cronSecret = process.env.CRON_DAILY_AI_EMAIL_SECRET || process.env.CRON_SECRET || process.env.CRON_WEEKLY_EMAIL_SECRET;
   const providedSecret = getCronSecretFromRequest(request);
 
   if (!cronSecret || providedSecret !== cronSecret) {
