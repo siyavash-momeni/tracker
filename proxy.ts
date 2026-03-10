@@ -5,6 +5,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/cron/weekly-email(.*)',
   '/api/cron/daily-ai-email(.*)',
   '/api/cron/daily-push(.*)',
+  '/api/cron/trigger(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {
