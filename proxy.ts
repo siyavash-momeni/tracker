@@ -2,23 +2,18 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
 const isPublicRoute = createRouteMatcher([
   '/api/webhook(.*)',
-  '/api/cron/weekly-email(.*)',
-  '/api/cron/daily-ai-email(.*)',
-  '/api/cron/daily-push(.*)',
-  '/api/cron/trigger(.*)',
+  '/api/cron/(.*)',
 ])
 
-export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
+export default clerkMiddleware(async (auth, req) => {
+  if (!isPublicRoute(req)) {
     await auth.protect()
   }
 })
 
 export const config = {
   matcher: [
-    // Ignore les fichiers statiques et Next.js interne
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Toujours exécuter pour les routes d'API
     '/(api|trpc)(.*)',
   ],
 }
