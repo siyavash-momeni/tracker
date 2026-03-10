@@ -14,7 +14,7 @@
     },
     {
       "path": "/api/cron/daily-ai-email",
-      "schedule": "15 20 * * *"
+      "schedule": "15 20 * * *" 
     },
     {
       "path": "/api/cron/weekly-email",
