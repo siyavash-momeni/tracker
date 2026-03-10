@@ -20,6 +20,7 @@ export async function GET() {
       create: {
         clerkId: userId,
         email: `user-${userId}@temp.com`,
+        dailyPushEnabled: false,
       },
     });
 

@@ -24,7 +24,7 @@ model User {
   email     String   @unique
   weeklyEmailEnabled Boolean  @default(true)
   dailyEmailEnabled  Boolean  @default(true)
-  dailyPushEnabled   Boolean  @default(true)
+  dailyPushEnabled   Boolean  @default(false)
   createdAt DateTime @default(now())
   notes     Notes[]
   habits    Habit[]  // Relation vers les habitudes
