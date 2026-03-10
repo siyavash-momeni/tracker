@@ -1,12 +1,19 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { clerkMiddleware } from '@clerk/nextjs/server'
 
-const isPublicRoute = createRouteMatcher([
-  '/api/webhook(.*)',
-  '/api/cron/(.*)',
-])
+const PUBLIC_PATH_PREFIXES = [
+  '/api/webhook',
+  '/api/cron/',
+]
 
 export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
+  try {
+    const pathname = new URL(request.url).pathname
+    const isPublic = PUBLIC_PATH_PREFIXES.some((p) => pathname.startsWith(p))
+
+    if (!isPublic) {
+      await auth.protect()
+    }
+  } catch (err) {
     await auth.protect()
   }
 })
