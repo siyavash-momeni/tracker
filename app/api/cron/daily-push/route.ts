@@ -202,10 +202,14 @@ function configureWebPush() {
 }
 
 export async function GET(request: Request) {
-  const cronSecret = process.env.CRON_DAILY_PUSH_SECRET || process.env.CRON_SECRET || process.env.CRON_DAILY_AI_EMAIL_SECRET;
+  const allowedCronSecrets = [
+    process.env.CRON_SECRET,
+    process.env.CRON_DAILY_PUSH_SECRET,
+    process.env.CRON_DAILY_AI_EMAIL_SECRET,
+  ].filter(Boolean) as string[];
   const providedSecret = getCronSecretFromRequest(request);
 
-  if (!cronSecret || providedSecret !== cronSecret) {
+  if (!providedSecret || !allowedCronSecrets.includes(providedSecret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
