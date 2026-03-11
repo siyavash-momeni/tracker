@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/daily-push",
-      "schedule": "44 15 * * *"
+      "schedule": "47 15 * * *"
     },
     {
       "path": "/api/cron/daily-ai-email",
@@ -14,7 +14,7 @@
     },
     {
       "path": "/api/cron/daily-ai-email",
-      "schedule": "44 15 * * *" 
+      "schedule": "47 15 * * *" 
     },
     {
       "path": "/api/cron/weekly-email",
@@ -22,7 +22,7 @@
     },
     {
       "path": "/api/cron/weekly-email",
-      "schedule": "44 15 * * *"
+      "schedule": "47 15 * * *"
     }
   ]
 }
