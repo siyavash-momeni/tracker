@@ -3,6 +3,8 @@ self.addEventListener('push', (event) => {
     title: 'Tracker',
     body: 'Tu as un rappel quotidien.',
     url: 'https://trackesiya.com',
+    notificationType: 'generic',
+    notificationTag: null,
   };
 
   try {
@@ -13,15 +15,22 @@ self.addEventListener('push', (event) => {
     // Ignore invalid payload and fallback to default values
   }
 
+  const notificationOptions = {
+    body: data.body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: {
+      url: data.url || 'https://trackesiya.com',
+    },
+  };
+
+  if (data.notificationType === 'daily-push' && data.notificationTag) {
+    notificationOptions.tag = data.notificationTag;
+    notificationOptions.renotify = false;
+  }
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      data: {
-        url: data.url || 'https://trackesiya.com',
-      },
-    })
+    self.registration.showNotification(data.title, notificationOptions)
   );
 });
 

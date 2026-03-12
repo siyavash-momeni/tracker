@@ -18,30 +18,7 @@ type DbSubscription = {
   p256dh: string;
   auth: string;
   expirationTime: Date | null;
-  userAgent: string | null;
-  updatedAt: Date;
 };
-
-function dedupeSubscriptionsByDevice(subscriptions: DbSubscription[]) {
-  const latestByUserAgent = new Map<string, DbSubscription>();
-  const withoutUserAgent: DbSubscription[] = [];
-
-  for (const subscription of subscriptions) {
-    const userAgent = subscription.userAgent?.trim();
-
-    if (!userAgent) {
-      withoutUserAgent.push(subscription);
-      continue;
-    }
-
-    const existing = latestByUserAgent.get(userAgent);
-    if (!existing || subscription.updatedAt.getTime() > existing.updatedAt.getTime()) {
-      latestByUserAgent.set(userAgent, subscription);
-    }
-  }
-
-  return [...latestByUserAgent.values(), ...withoutUserAgent];
-}
 
 function isTransientPrismaConnectionError(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -102,12 +79,14 @@ function buildPushBody(content: string) {
   return `${body.slice(0, 219).trim()}…`;
 }
 
-function buildPushPayload(copy: { subject: string; content: string; ctaPath: '/today'; source: 'ia' | 'fallback' }) {
+function buildPushPayload(copy: { subject: string; content: string; ctaPath: '/today'; source: 'ia' | 'fallback' }, dayKey: string) {
   return {
     title: buildPushTitle(copy.subject),
     body: buildPushBody(copy.content),
     url: 'https://trackesiya.com',
     source: copy.source,
+    notificationType: 'daily-push',
+    notificationTag: `daily-push-${dayKey}`,
   };
 }
 
@@ -139,7 +118,6 @@ async function sendPushForUser(params: {
   dayKey: string;
 }) {
   const { userId, subscriptions, dayStartUtc, dayEndUtc, dayKey } = params;
-  const targetSubscriptions = dedupeSubscriptionsByDevice(subscriptions);
 
   const stats = await withPrismaRetry(() =>
     buildDailyStatsForUser({
@@ -151,14 +129,14 @@ async function sendPushForUser(params: {
   );
 
   const copy = await generateDailyEmailCopy(stats);
-  const payload = buildPushPayload(copy);
+  const payload = buildPushPayload(copy, dayKey);
   const payloadRaw = JSON.stringify(payload);
 
   let sent = 0;
   let cleanedInvalid = 0;
   let failed = 0;
 
-  for (const subscription of targetSubscriptions) {
+  for (const subscription of subscriptions) {
     try {
       await webpush.sendNotification(mapSubscriptionForWebPush(subscription), payloadRaw, {
         TTL: 24 * 60 * 60,
@@ -274,8 +252,6 @@ export async function GET(request: Request) {
                 p256dh: true,
                 auth: true,
                 expirationTime: true,
-                userAgent: true,
-                updatedAt: true,
               },
             },
           },
@@ -324,8 +300,6 @@ export async function GET(request: Request) {
               p256dh: true,
               auth: true,
               expirationTime: true,
-              userAgent: true,
-              updatedAt: true,
             },
           },
         },

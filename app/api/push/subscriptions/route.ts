@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
     const userAgent = request.headers.get('user-agent')?.slice(0, 500) || null;
 
-    await prisma.pushSubscription.upsert({
+    const upsertedSubscription = await prisma.pushSubscription.upsert({
       where: { endpoint: body.endpoint! },
       create: {
         userId,
@@ -93,6 +93,17 @@ export async function POST(request: Request) {
         },
       });
     }
+
+    await prisma.pushSubscription.deleteMany({
+      where: {
+        userId,
+        id: {
+          not: upsertedSubscription.id,
+        },
+        p256dh: body.keys!.p256dh!,
+        auth: body.keys!.auth!,
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
