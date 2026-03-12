@@ -5,24 +5,12 @@
       "schedule": "5 9 * * *"
     },
     {
-      "path": "/api/cron/daily-push",
-      "schedule": "25 17 * * *"
-    },
-    {
       "path": "/api/cron/daily-ai-email",
       "schedule": "0 9 * * *"
     },
     {
-      "path": "/api/cron/daily-ai-email",
-      "schedule": "25 17 * * *"
-    },
-    {
       "path": "/api/cron/weekly-email",
       "schedule": "0 9 * * 1"
-    },
-    {
-      "path": "/api/cron/weekly-email",
-      "schedule": "25 17 * * *"
     }
   ]
 }

@@ -60,6 +60,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payload de subscription invalide' }, { status: 400 });
     }
 
+    const userAgent = request.headers.get('user-agent')?.slice(0, 500) || null;
+
     await prisma.pushSubscription.upsert({
       where: { endpoint: body.endpoint! },
       create: {
@@ -68,15 +70,29 @@ export async function POST(request: Request) {
         p256dh: body.keys!.p256dh!,
         auth: body.keys!.auth!,
         expirationTime: toExpirationDate(body.expirationTime),
+        userAgent,
       },
       update: {
         userId,
         p256dh: body.keys!.p256dh!,
         auth: body.keys!.auth!,
         expirationTime: toExpirationDate(body.expirationTime),
+        userAgent,
         failureReason: null,
       },
     });
+
+    if (userAgent) {
+      await prisma.pushSubscription.deleteMany({
+        where: {
+          userId,
+          userAgent,
+          endpoint: {
+            not: body.endpoint!,
+          },
+        },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
