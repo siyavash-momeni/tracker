@@ -2,15 +2,15 @@
   "crons": [
     {
       "path": "/api/cron/daily-push",
-      "schedule": "5 9 * * *"
+      "schedule": "5 7 * * *"
     },
     {
       "path": "/api/cron/daily-ai-email",
-      "schedule": "0 9 * * *"
+      "schedule": "0 7 * * *"
     },
     {
       "path": "/api/cron/weekly-email",
-      "schedule": "0 9 * * 1"
+      "schedule": "0 7 * * 1"
     }
   ]
 }
