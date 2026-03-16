@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/prisma.client';
 import { NextResponse } from 'next/server';
 
@@ -14,12 +14,26 @@ export async function GET() {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
 
+    const clerkUser = await currentUser();
+    const clerkPrimaryEmail =
+      clerkUser?.primaryEmailAddress?.emailAddress ||
+      clerkUser?.emailAddresses?.[0]?.emailAddress ||
+      null;
+
+    if (!clerkPrimaryEmail) {
+      return NextResponse.json({ error: 'Email Clerk indisponible' }, { status: 409 });
+    }
+
+    const normalizedEmail = clerkPrimaryEmail.trim().toLowerCase();
+
     const user = await prisma.user.upsert({
       where: { clerkId: userId },
-      update: {},
+      update: {
+        email: normalizedEmail,
+      },
       create: {
         clerkId: userId,
-        email: `user-${userId}@temp.com`,
+        email: normalizedEmail,
         dailyPushEnabled: false,
       },
       select: {

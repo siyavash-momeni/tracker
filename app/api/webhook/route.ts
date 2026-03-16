@@ -4,6 +4,25 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+function resolveWebhookPrimaryEmail(data: any): string {
+  const emailAddresses = Array.isArray(data?.email_addresses) ? data.email_addresses : [];
+  const primaryEmailAddressId = data?.primary_email_address_id;
+
+  const primaryEmailEntry = emailAddresses.find((item: any) => item?.id === primaryEmailAddressId);
+  const primaryEmail = primaryEmailEntry?.email_address;
+
+  if (typeof primaryEmail === 'string' && primaryEmail.trim()) {
+    return primaryEmail.trim().toLowerCase();
+  }
+
+  const firstEmail = emailAddresses[0]?.email_address;
+  if (typeof firstEmail === 'string' && firstEmail.trim()) {
+    return firstEmail.trim().toLowerCase();
+  }
+
+  return '';
+}
+
 export async function POST(req: NextRequest) {
   try {
     // 1. Vérification du Secret
@@ -30,13 +49,16 @@ export async function POST(req: NextRequest) {
     }
 
     const { type, data } = evt;
-    const email = data?.email_addresses?.[0]?.email_address || data?.primary_email_address || '';
+    const email = resolveWebhookPrimaryEmail(data);
 
     // 4. Logique Base de données (Neon via Prisma)
     try {
       switch (type) {
         case "user.created":
         case "user.updated":
+          if (!email) {
+            return new Response('ERROR: 422_EMAIL_MISSING', { status: 422 });
+          }
           // On utilise upsert pour éviter l'erreur si l'ID n'existe pas encore (test Clerk)
           await prisma.user.upsert({
             where: { clerkId: data.id },
