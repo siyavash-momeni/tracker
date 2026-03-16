@@ -279,6 +279,8 @@ export default function SettingsPage() {
     }
   };
 
+  const pushEnabled = Boolean(settings?.dailyPushEnabled) && pushDeviceEnabled;
+
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full">
       <div className="page-header mb-4 w-full shrink-0">
@@ -351,16 +353,16 @@ export default function SettingsPage() {
 
                 <button
                   type="button"
-                  onClick={() => settings && updatePushToggle(!pushDeviceEnabled)}
+                  onClick={() => settings && updatePushToggle(!pushEnabled)}
                   disabled={savingKey === 'push' || !settings || !pushSupported}
                   className={`w-full flex items-center justify-between rounded-xl border px-3 py-2 text-sm font-semibold transition ${
-                    pushDeviceEnabled
+                    pushEnabled
                       ? 'bg-blue-50 border-blue-200 text-blue-700'
                       : 'bg-white border-gray-200 text-gray-700'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <span>Notifications push</span>
-                  <span>{savingKey === 'push' ? '...' : pushDeviceEnabled ? 'Activé' : 'Désactivé'}</span>
+                  <span>{savingKey === 'push' ? '...' : pushEnabled ? 'Activé' : 'Désactivé'}</span>
                 </button>
               </div>
 
@@ -391,7 +393,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => sendTestEmail('push')}
-                    disabled={testingKey !== null || !settings || !pushDeviceEnabled}
+                    disabled={testingKey !== null || !settings || !pushEnabled}
                     className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {testingKey === 'push' ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}

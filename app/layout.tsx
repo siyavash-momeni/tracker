@@ -5,6 +5,7 @@ import "./globals.css";
 import { Home, BarChart2, PlusCircle, Settings } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import PushOnboardingPrompt from './push-onboarding-prompt';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -79,6 +80,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
           <main className="flex-1 px-3 sm:px-6 py-4 pb-32 sm:pb-36">
             {children}
           </main>
+
+          <PushOnboardingPrompt />
 
           {/* NAVIGATION */}
           <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white/80 backdrop-blur-md border-t border-gray-200/50 h-24 sm:h-28 flex items-center justify-around px-1 sm:px-2 shadow-lg">
