@@ -3,12 +3,6 @@
 import { useAuth } from '@clerk/nextjs';
 import { useEffect, useMemo, useState } from 'react';
 
-type SettingsResponse = {
-  settings?: {
-    dailyPushEnabled?: boolean;
-  };
-};
-
 const STORAGE_KEY_PREFIX = 'push-onboarding-dismissed-v1:';
 
 function base64UrlToUint8Array(base64Url: string) {
@@ -46,15 +40,11 @@ export default function PushOnboardingPrompt() {
 
     const checkAndOpen = async () => {
       try {
-        const settingsRes = await fetch('/api/settings');
-        const settingsData = (await settingsRes.json().catch(() => ({}))) as SettingsResponse;
-        const accountPushEnabled = Boolean(settingsData?.settings?.dailyPushEnabled);
-
         const registration = await navigator.serviceWorker.register('/push-sw.js');
         const subscription = await registration.pushManager.getSubscription();
         const devicePushEnabled = Boolean(subscription);
 
-        if (devicePushEnabled || accountPushEnabled) {
+        if (devicePushEnabled) {
           if (devicePushEnabled && storageKey) {
             localStorage.setItem(storageKey, '1');
           }
