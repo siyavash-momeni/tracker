@@ -18,10 +18,34 @@ enum HabitFrequency {
   WEEKLY
 }
 
+enum SubscriptionStatus {
+  FREE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  UNPAID
+}
+
+enum SubscriptionInterval {
+  NONE
+  MONTHLY
+  YEARLY
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
   email     String   @unique
+  stripeCustomerId String? @unique
+  stripeSubscriptionId String? @unique
+  subscriptionStatus SubscriptionStatus @default(FREE)
+  subscriptionInterval SubscriptionInterval @default(NONE)
+  subscriptionCurrentPeriodEnd DateTime?
+  trialEndsAt DateTime?
+  subscriptionCancelAtPeriodEnd Boolean @default(false)
   weeklyEmailEnabled Boolean  @default(true)
   dailyEmailEnabled  Boolean  @default(true)
   dailyPushEnabled   Boolean  @default(false)

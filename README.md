@@ -21,6 +21,15 @@ Pour configurer le projet, tu dois créer un fichier `.env` à partir du templat
 - `VAPID_PRIVATE_KEY=` : clé privée VAPID utilisée côté serveur
 - `VAPID_SUBJECT=` : contact VAPID (ex: `mailto:no-reply@trackersiya.com`)
 
+### Variables pour les abonnements Stripe
+
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=` : clé publique Stripe (frontend)
+- `STRIPE_SECRET_KEY=` : clé privée Stripe (backend)
+- `STRIPE_WEBHOOK_SECRET=` : secret de signature du webhook Stripe
+- `STRIPE_PRICE_MONTHLY_ID=` : price ID du plan mensuel (2 CHF/mois)
+- `STRIPE_PRICE_YEARLY_ID=` : price ID du plan annuel (19 CHF/an)
+- `APP_URL=` : URL publique de l'application (utilisée pour les retours checkout)
+
 ### Cron hebdomadaire
 
 Planifier un appel hebdomadaire vers:
@@ -81,3 +90,20 @@ Le push quotidien:
 
 - `POST /api/push/subscriptions` : enregistrer ou mettre à jour une subscription navigateur
 - `DELETE /api/push/subscriptions` : supprimer une subscription
+
+### Checkout et webhook Stripe
+
+- `POST /api/stripe/checkout` avec body `{ "plan": "monthly" }` ou `{ "plan": "yearly" }`
+- `POST /api/stripe/webhook` pour synchroniser l'état d'abonnement côté application
+
+Événements gérés par le webhook:
+
+- `checkout.session.completed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_failed`
+
+Page client:
+
+- `GET /pricing` pour afficher les offres et démarrer Stripe Checkout

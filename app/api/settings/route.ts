@@ -1,10 +1,18 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/prisma.client';
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 
 function readBooleanEnv(value: string | undefined, fallback = false) {
   if (!value) return fallback;
   return value.toLowerCase() === 'true';
+}
+
+function buildEmailAlias(baseEmail: string, clerkId: string) {
+  const [localPartRaw, domainRaw] = baseEmail.split('@');
+  const localPart = localPartRaw || 'user';
+  const domain = domainRaw || 'local.invalid';
+  return `${localPart}+clerk-${clerkId.slice(0, 8)}@${domain}`;
 }
 
 export async function GET() {
@@ -25,24 +33,72 @@ export async function GET() {
     }
 
     const normalizedEmail = clerkPrimaryEmail.trim().toLowerCase();
+    const userSelect = {
+      email: true,
+      weeklyEmailEnabled: true,
+      dailyEmailEnabled: true,
+      dailyPushEnabled: true,
+      subscriptionStatus: true,
+      subscriptionInterval: true,
+      subscriptionCurrentPeriodEnd: true,
+      trialEndsAt: true,
+      subscriptionCancelAtPeriodEnd: true,
+    } as const;
 
-    const user = await prisma.user.upsert({
+    const existingByClerk = await prisma.user.findUnique({
       where: { clerkId: userId },
-      update: {
-        email: normalizedEmail,
-      },
-      create: {
-        clerkId: userId,
-        email: normalizedEmail,
-        dailyPushEnabled: false,
-      },
-      select: {
-        email: true,
-        weeklyEmailEnabled: true,
-        dailyEmailEnabled: true,
-        dailyPushEnabled: true,
-      },
+      select: userSelect,
     });
+
+    let user = existingByClerk;
+
+    if (existingByClerk) {
+      if (existingByClerk.email !== normalizedEmail) {
+        const emailOwner = await prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          select: { clerkId: true },
+        });
+
+        if (!emailOwner || emailOwner.clerkId === userId) {
+          user = await prisma.user.update({
+            where: { clerkId: userId },
+            data: { email: normalizedEmail },
+            select: userSelect,
+          });
+        }
+      }
+    } else {
+      try {
+        user = await prisma.user.create({
+          data: {
+            clerkId: userId,
+            email: normalizedEmail,
+            dailyPushEnabled: false,
+          },
+          select: userSelect,
+        });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          user = await prisma.user.create({
+            data: {
+              clerkId: userId,
+              email: buildEmailAlias(normalizedEmail, userId),
+              dailyPushEnabled: false,
+            },
+            select: userSelect,
+          });
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: 'Impossible de charger les paramètres utilisateur' }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,
@@ -51,6 +107,11 @@ export async function GET() {
         weeklyEmailEnabled: user.weeklyEmailEnabled,
         dailyEmailEnabled: user.dailyEmailEnabled,
         dailyPushEnabled: user.dailyPushEnabled,
+        subscriptionStatus: user.subscriptionStatus,
+        subscriptionInterval: user.subscriptionInterval,
+        subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd,
+        trialEndsAt: user.trialEndsAt,
+        subscriptionCancelAtPeriodEnd: user.subscriptionCancelAtPeriodEnd,
         showEmailTestActions: readBooleanEnv(process.env.SHOW_EMAIL_TEST_ACTIONS, false),
       },
     });
