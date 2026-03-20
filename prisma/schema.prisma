@@ -46,6 +46,7 @@ model User {
   subscriptionCurrentPeriodEnd DateTime?
   trialEndsAt DateTime?
   subscriptionCancelAtPeriodEnd Boolean @default(false)
+  premiumGranted Boolean @default(false)  // Accès premium gratuit accordé
   weeklyEmailEnabled Boolean  @default(true)
   dailyEmailEnabled  Boolean  @default(true)
   dailyPushEnabled   Boolean  @default(false)

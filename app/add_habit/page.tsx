@@ -16,6 +16,7 @@ export default function AddHabitPage() {
   const [showCustomTargetPicker, setShowCustomTargetPicker] = useState(false);
   const [customTargetInput, setCustomTargetInput] = useState('1');
   const [customTargetValue, setCustomTargetValue] = useState<number | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   const weekDays = [
     { value: 1, label: 'Lun' },
@@ -84,10 +85,20 @@ export default function AddHabitPage() {
           activeDays,
         }),
       });
+      
       if (!res.ok) {
         const data = await res.json();
+        
+        // Gestion spéciale pour la limite d'habitudes
+        if (data.limitReached) {
+          setShowLimitModal(true);
+          setLoading(false);
+          return;
+        }
+        
         throw new Error(data.error || 'Erreur');
       }
+      
       window.location.href = '/';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
@@ -325,6 +336,44 @@ export default function AddHabitPage() {
         </form>
         </div>
       </main>
+
+      {/* Modal limite d'habitudes */}
+      {showLimitModal && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setShowLimitModal(false)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div className="w-full max-w-sm rounded-3xl bg-white p-6 border border-gray-100 shadow-2xl space-y-4">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 mx-auto">
+                <AlertCircle className="text-amber-600" size={24} />
+              </div>
+              
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-bold text-gray-900">
+                  Limite d'habitudes atteinte
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Vous pouvez créer un maximum de 2 habitudes gratuitement. Passez à la version premium pour créer plus d'habitudes.
+                </p>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <button
+                  onClick={() => setShowLimitModal(false)}
+                  className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => (window.location.href = '/pricing')}
+                  className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold hover:shadow-lg transition"
+                >
+                  Voir les plans
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
       </div>
   );
 }

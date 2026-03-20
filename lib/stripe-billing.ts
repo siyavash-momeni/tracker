@@ -1,9 +1,15 @@
 import Stripe from 'stripe';
 import { prisma } from '@/prisma.client';
+import type { SubscriptionStatus } from '@prisma/client';
 
 type StripeSubscriptionWithDates = Stripe.Subscription & {
   current_period_end?: number | null;
   trial_end?: number | null;
+};
+
+type UserPremiumInfo = {
+  subscriptionStatus: SubscriptionStatus;
+  premiumGranted: boolean;
 };
 
 export const STRIPE_STATUS_MAP: Record<string, 'FREE' | 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'INCOMPLETE_EXPIRED' | 'UNPAID'> = {
@@ -83,4 +89,7 @@ export function isManagedSubscriptionStatus(
   status: 'FREE' | 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'INCOMPLETE_EXPIRED' | 'UNPAID'
 ) {
   return ['TRIALING', 'ACTIVE', 'PAST_DUE', 'INCOMPLETE', 'UNPAID'].includes(status);
+}
+export function isPremiumUser(user: UserPremiumInfo): boolean {
+  return user.premiumGranted || isManagedSubscriptionStatus(user.subscriptionStatus);
 }
