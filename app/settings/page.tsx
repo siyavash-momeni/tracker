@@ -84,6 +84,10 @@ export default function SettingsPage() {
     if (billing === 'success' || billing === 'portal_return') {
       syncBillingStatus(sessionId);
     }
+
+    if (billing || sessionId) {
+      window.history.replaceState({}, '', '/settings');
+    }
   }, []);
 
   const syncPushStatus = async () => {
