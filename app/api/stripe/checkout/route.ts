@@ -165,8 +165,8 @@ export async function POST(request: Request) {
         price: planConfig.priceId,
         quantity: 1,
       }],
-      success_url: `${baseUrl}/settings?billing=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/settings?billing=canceled`,
+      success_url: `${baseUrl}/settings`,
+      cancel_url: `${baseUrl}/settings`,
       allow_promotion_codes: true,
       subscription_data: {
         trial_period_days: planConfig.trialPeriodDays,
