@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2, Send } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 
 type SettingsState = {
   email: string;
@@ -27,7 +26,7 @@ type SettingsState = {
 };
 
 export default function SettingsPage() {
-  const searchParams = useSearchParams();
+  const [billingStatus, setBillingStatus] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsState | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<'weekly' | 'daily' | 'push' | null>(null);
@@ -74,13 +73,18 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    const billing = searchParams.get('billing');
-    const sessionId = searchParams.get('session_id');
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const billing = params.get('billing');
+    const sessionId = params.get('session_id');
+
+    setBillingStatus(billing);
 
     if (billing === 'success' || billing === 'portal_return') {
       syncBillingStatus(sessionId);
     }
-  }, [searchParams]);
+  }, []);
 
   const syncPushStatus = async () => {
     if (typeof window === 'undefined') return;
@@ -354,7 +358,6 @@ export default function SettingsPage() {
   const trialEnd = settings?.trialEndsAt
     ? new Date(settings.trialEndsAt).toLocaleDateString('fr-CH')
     : null;
-  const billingStatus = searchParams.get('billing');
   const hasManagedSubscription = ['TRIALING', 'ACTIVE', 'PAST_DUE', 'INCOMPLETE', 'UNPAID'].includes(
     settings?.subscriptionStatus || 'FREE'
   );
