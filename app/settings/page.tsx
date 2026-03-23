@@ -387,7 +387,7 @@ export default function SettingsPage() {
               {billingStatus === 'success' && (
                 <div className="flex gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
                   <CheckCircle2 size={18} className="text-emerald-600" />
-                  <p className="text-sm text-emerald-800">Paiement validé. Le statut d’abonnement est en cours de synchronisation.</p>
+                  <p className="text-sm text-emerald-800">Paiement validé. Le statut d’abonnement est synchronisé.</p>
                 </div>
               )}
 
