@@ -2,20 +2,36 @@
 
 import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2, Send } from 'lucide-react';
+import Link from 'next/link';
 
 type SettingsState = {
   email: string;
   weeklyEmailEnabled: boolean;
   dailyEmailEnabled: boolean;
   dailyPushEnabled: boolean;
+  subscriptionStatus:
+    | 'FREE'
+    | 'TRIALING'
+    | 'ACTIVE'
+    | 'PAST_DUE'
+    | 'CANCELED'
+    | 'INCOMPLETE'
+    | 'INCOMPLETE_EXPIRED'
+    | 'UNPAID';
+  subscriptionInterval: 'NONE' | 'MONTHLY' | 'YEARLY';
+  subscriptionCurrentPeriodEnd: string | null;
+  trialEndsAt: string | null;
+  subscriptionCancelAtPeriodEnd: boolean;
   showEmailTestActions: boolean;
 };
 
 export default function SettingsPage() {
+  const [billingStatus, setBillingStatus] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsState | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<'weekly' | 'daily' | 'push' | null>(null);
   const [testingKey, setTestingKey] = useState<'weekly' | 'daily' | 'push' | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
   const [pushSupported, setPushSupported] = useState(false);
   const [pushDeviceEnabled, setPushDeviceEnabled] = useState(false);
   const [error, setError] = useState('');
@@ -54,6 +70,24 @@ export default function SettingsPage() {
   useEffect(() => {
     loadSettings();
     syncPushStatus();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const billing = params.get('billing');
+    const sessionId = params.get('session_id');
+
+    setBillingStatus(billing);
+
+    if (billing === 'success' || billing === 'portal_return') {
+      syncBillingStatus(sessionId);
+    }
+
+    if (billing || sessionId) {
+      window.history.replaceState({}, '', '/settings');
+    }
   }, []);
 
   const syncPushStatus = async () => {
@@ -279,7 +313,58 @@ export default function SettingsPage() {
     }
   };
 
+  const syncBillingStatus = async (sessionId: string | null = null) => {
+    setBillingLoading(true);
+    try {
+      const res = await fetch('/api/stripe/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Impossible de synchroniser l’abonnement.');
+      }
+
+      await loadSettings();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const openBillingPortal = async () => {
+    setBillingLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Impossible d’ouvrir la gestion d’abonnement.');
+      }
+
+      if (!data.url) {
+        throw new Error('URL du portail Stripe manquante.');
+      }
+
+      window.location.assign(data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setBillingLoading(false);
+    }
+  };
+
   const pushEnabled = Boolean(settings?.dailyPushEnabled) && pushDeviceEnabled;
+  const subscriptionPeriodEnd = settings?.subscriptionCurrentPeriodEnd
+    ? new Date(settings.subscriptionCurrentPeriodEnd).toLocaleDateString('fr-CH')
+    : null;
+  const trialEnd = settings?.trialEndsAt
+    ? new Date(settings.trialEndsAt).toLocaleDateString('fr-CH')
+    : null;
+  const hasManagedSubscription = ['TRIALING', 'ACTIVE', 'PAST_DUE', 'INCOMPLETE', 'UNPAID'].includes(
+    settings?.subscriptionStatus || 'FREE'
+  );
 
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full">
@@ -299,6 +384,27 @@ export default function SettingsPage() {
             </div>
           ) : (
             <>
+              {billingStatus === 'success' && (
+                <div className="flex gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                  <CheckCircle2 size={18} className="text-emerald-600" />
+                  <p className="text-sm text-emerald-800">Paiement validé. Le statut d’abonnement est synchronisé.</p>
+                </div>
+              )}
+
+              {billingStatus === 'portal_return' && (
+                <div className="flex gap-2 p-3 bg-blue-50 border border-blue-200 rounded-2xl">
+                  <CheckCircle2 size={18} className="text-blue-600" />
+                  <p className="text-sm text-blue-800">Retour depuis Stripe. L’abonnement est en cours d’actualisation.</p>
+                </div>
+              )}
+
+              {billingStatus === 'canceled' && (
+                <div className="flex gap-2 p-3 bg-amber-50 border border-amber-200 rounded-2xl">
+                  <AlertCircle size={18} className="text-amber-600" />
+                  <p className="text-sm text-amber-800">Paiement annulé. Aucun changement d’abonnement n’a été appliqué.</p>
+                </div>
+              )}
+
               {error && (
                 <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-2xl">
                   <AlertCircle size={18} className="text-red-600" />
@@ -318,6 +424,58 @@ export default function SettingsPage() {
                 <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">
                   {settings?.email || '-'}
                 </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-2">
+                <p className="text-sm text-gray-500">Abonnement</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {settings?.subscriptionStatus || 'FREE'}
+                  {settings?.subscriptionInterval && settings.subscriptionInterval !== 'NONE'
+                    ? ` • ${settings.subscriptionInterval}`
+                    : ''}
+                </p>
+                {trialEnd && <p className="text-xs text-gray-600">Fin d’essai: {trialEnd}</p>}
+                {subscriptionPeriodEnd && (
+                  <p className="text-xs text-gray-600">Prochain renouvellement: {subscriptionPeriodEnd}</p>
+                )}
+                {settings?.subscriptionCancelAtPeriodEnd && (
+                  <p className="text-xs text-amber-700">Résiliation planifiée en fin de période.</p>
+                )}
+
+                {billingLoading && (
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <Loader2 size={14} className="animate-spin" /> Synchronisation abonnement...
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  {!hasManagedSubscription ? (
+                    <Link
+                      href="/pricing"
+                      className="inline-flex items-center justify-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      Voir les offres
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={openBillingPortal}
+                      disabled={billingLoading}
+                      className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      Changer ou annuler l’abonnement
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => syncBillingStatus()}
+                    disabled={billingLoading}
+                    className="inline-flex items-center justify-center rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    Actualiser le statut
+                  </button>
+                </div>
               </div>
 
               <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-3">

@@ -3,6 +3,7 @@ import { clerkMiddleware } from '@clerk/nextjs/server'
 const PUBLIC_PATH_PREFIXES = [
   '/api/webhook',
   '/api/cron/',
+  '/api/stripe/webhook',
 ]
 
 export default clerkMiddleware(async (auth, request) => {

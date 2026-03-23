@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/prisma.client';
 import { NextRequest, NextResponse } from 'next/server';
+import { isPremiumUser } from '@/lib/stripe-billing';
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,6 +71,42 @@ export async function POST(request: NextRequest) {
         { error: 'Les jours actifs doivent être entre 1 et 7' },
         { status: 400 }
       );
+    }
+
+    // Vérifier la limite d'habitudes pour les utilisateurs gratuits
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: {
+        subscriptionStatus: true,
+        premiumGranted: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Utilisateur non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    const isPremium = isPremiumUser(user);
+
+    if (!isPremium) {
+      // Compter les habitudes existantes de l'utilisateur
+      const habitCount = await prisma.habit.count({
+        where: { userId },
+      });
+
+      if (habitCount >= 2) {
+        return NextResponse.json(
+          {
+            error: 'Limite d\'habitudes atteinte',
+            limitReached: true,
+            currentLimit: 2,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Créer l'habitude
