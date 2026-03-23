@@ -53,7 +53,7 @@ async function getOrCreatePrice(productId, amount, interval, plan) {
     currency: 'chf',
     unit_amount: amount,
     recurring: { interval },
-    metadata: { kusari_plan: plan },
+    metadata: { tracker_plan: plan },
   });
 }
 
@@ -79,7 +79,7 @@ async function getWebhookInfo() {
       'customer.subscription.deleted',
       'invoice.payment_failed',
     ],
-    description: 'Kusari billing webhook',
+    description: 'tracker billing webhook',
   });
 
   return {
@@ -89,8 +89,8 @@ async function getWebhookInfo() {
   };
 }
 
-const monthlyProduct = await getOrCreateProduct('monthly', 'Kusari Monthly', "14 jours d'essai puis 2 CHF/mois");
-const yearlyProduct = await getOrCreateProduct('yearly', 'Kusari Yearly', '19 CHF/an');
+const monthlyProduct = await getOrCreateProduct('monthly', 'tracker Monthly', "14 jours d'essai puis 2 CHF/mois");
+const yearlyProduct = await getOrCreateProduct('yearly', 'tracker Yearly', '19 CHF/an');
 const monthlyPrice = await getOrCreatePrice(monthlyProduct.id, 200, 'month', 'monthly');
 const yearlyPrice = await getOrCreatePrice(yearlyProduct.id, 1900, 'year', 'yearly');
 

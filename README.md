@@ -7,7 +7,7 @@ Pour configurer le projet, tu dois créer un fichier `.env` à partir du templat
 
 - `CRON_WEEKLY_EMAIL_SECRET=` : secret partagé entre le scheduler et l'API cron
 - `RESEND_API_KEY=` : clé API Resend
-- `EMAIL_FROM=` : adresse expéditrice (ex: `Kusari <no-reply@kusari.app>`)
+- `EMAIL_FROM=` : adresse expéditrice (ex: `tracker <no-reply@tracker.app>`)
 
 ### Variables pour l'envoi quotidien IA
 
