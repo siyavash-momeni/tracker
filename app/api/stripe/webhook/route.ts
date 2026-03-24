@@ -1,3 +1,5 @@
+// Documentation FR: Route API serveur de Tracker (validation, accès auth et logique métier).
+
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/prisma.client';

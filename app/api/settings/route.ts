@@ -1,3 +1,5 @@
+// Documentation FR: Route API serveur de Tracker (validation, accès auth et logique métier).
+
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/prisma.client';
 import { NextResponse } from 'next/server';
@@ -6,13 +8,6 @@ import { Prisma } from '@prisma/client';
 function readBooleanEnv(value: string | undefined, fallback = false) {
   if (!value) return fallback;
   return value.toLowerCase() === 'true';
-}
-
-function buildEmailAlias(baseEmail: string, clerkId: string) {
-  const [localPartRaw, domainRaw] = baseEmail.split('@');
-  const localPart = localPartRaw || 'user';
-  const domain = domainRaw || 'local.invalid';
-  return `${localPart}+clerk-${clerkId.slice(0, 8)}@${domain}`;
 }
 
 export async function GET() {
@@ -82,14 +77,20 @@ export async function GET() {
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === 'P2002'
         ) {
-          user = await prisma.user.create({
-            data: {
-              clerkId: userId,
-              email: buildEmailAlias(normalizedEmail, userId),
-              dailyPushEnabled: false,
-            },
+          // L'email est déjà utilisé — on vérifie à qui il appartient
+          const conflictUser = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
             select: userSelect,
           });
+          if (conflictUser) {
+            // Même utilisateur Clerk (ex: doublon création) → on réutilise le compte
+            user = conflictUser;
+          } else {
+            return NextResponse.json(
+              { error: 'Cette adresse email est déjà utilisée par un autre compte.' },
+              { status: 409 }
+            );
+          }
         } else {
           throw error;
         }

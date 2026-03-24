@@ -1,5 +1,6 @@
 'use client';
 
+// Documentation FR: Page UI principale de Tracker (affichage et interactions côté client).
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';

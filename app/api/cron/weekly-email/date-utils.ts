@@ -1,3 +1,5 @@
+// Documentation FR: Route API serveur de Tracker (validation, accès auth et logique métier).
+
 export function getWeekStartDateUtc(date: Date): Date {
   const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   const mondayOffset = (utcDate.getUTCDay() + 6) % 7;

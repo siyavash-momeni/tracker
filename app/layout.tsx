@@ -1,11 +1,13 @@
 'use client';
 
+// Documentation FR: Layout global de l'application (shell, navigation, provider Clerk).
 import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs';
 import "./globals.css";
 import { Home, BarChart2, PlusCircle, Settings } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import PushOnboardingPrompt from './push-onboarding-prompt';
+import { AdminNavItem } from './admin-nav-item';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -89,6 +91,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
             <NavItem icon={<PlusCircle size={22} className="sm:w-7 sm:h-7" />} label="Ajouter" href="/add_habit" active={isActive('/add_habit')} />
             <NavItem icon={<BarChart2 size={22} className="sm:w-7 sm:h-7" />} label="Stats" href="/stats" active={isActive('/stats')} />
             <NavItem icon={<Settings size={22} className="sm:w-7 sm:h-7" />} label="Paramètres" href="/settings" active={isActive('/settings')} />
+            <AdminNavItem isActive={isActive('/admin')} />
           </nav>
 
         </div>

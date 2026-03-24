@@ -1,5 +1,6 @@
 "use client";
 
+// Documentation FR: Page UI principale de Tracker (affichage et interactions côté client).
 import { useEffect, useState, useCallback } from "react";
 import moment from "moment";
 import "moment/locale/fr";

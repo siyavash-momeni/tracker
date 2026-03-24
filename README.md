@@ -1,109 +1,204 @@
-## Variables d'environnement
+# Tracker
 
-Pour configurer le projet, tu dois créer un fichier `.env` à partir du template fourni `.env.exemple`.
- - "DATABASE_URL=" se trouve dans la bdd Neon
+Application Next.js de suivi d’habitudes avec :
+- authentification utilisateur (Clerk),
+- abonnements premium (Stripe),
+- base de données PostgreSQL (Neon + Prisma),
+- emails automatiques (Resend),
+- notifications push web,
+- tableau d’administration (`/admin`).
 
-### Variables pour l'envoi hebdomadaire d'email
+## Stack technique
 
-- `CRON_WEEKLY_EMAIL_SECRET=` : secret partagé entre le scheduler et l'API cron
-- `RESEND_API_KEY=` : clé API Resend
-- `EMAIL_FROM=` : adresse expéditrice (ex: `tracker <no-reply@tracker.app>`)
+- Next.js 16 (App Router)
+- React 19 + TypeScript
+- Prisma + PostgreSQL (Neon)
+- Clerk (auth + metadata RBAC)
+- Stripe (Checkout, webhook, portail client)
+- Resend (emails)
+- OpenAI (génération du contenu email quotidien)
+- Web Push (VAPID)
 
-### Variables pour l'envoi quotidien IA
+## Fonctionnalités principales
 
-- `CRON_DAILY_AI_EMAIL_SECRET=` : secret partagé pour le cron quotidien IA
-- `OPENAI_API_KEY=` : clé API OpenAI utilisée pour générer le message quotidien
+- Gestion d’habitudes (création, suivi, stats)
+- Notes utilisateur
+- Dashboard de statistiques
+- Abonnement premium (mensuel / annuel)
+- Synchronisation Stripe via webhook
+- Emails hebdomadaires automatiques
+- Emails quotidiens IA automatiques
+- Notifications push quotidiennes
+- Interface admin protégée (`/admin`) avec vue des utilisateurs
+- Toggle admin pour accorder/retirer `premiumGranted` par utilisateur
 
-### Variables pour les push quotidiens
+## Prérequis
 
-- `CRON_DAILY_PUSH_SECRET=` : secret partagé pour le cron push quotidien
-- `NEXT_PUBLIC_VAPID_PUBLIC_KEY=` : clé publique VAPID utilisée côté navigateur
-- `VAPID_PRIVATE_KEY=` : clé privée VAPID utilisée côté serveur
-- `VAPID_SUBJECT=` : contact VAPID (ex: `mailto:no-reply@trackersiya.com`)
+- Node.js 20+
+- npm
+- Une base PostgreSQL (Neon recommandé)
+- Comptes / clés : Clerk, Stripe, Resend, OpenAI (si email IA utilisé)
 
-### Variables pour les abonnements Stripe
+## Lancer le projet en local
 
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=` : clé publique Stripe (frontend)
-- `STRIPE_SECRET_KEY=` : clé privée Stripe (backend)
-- `STRIPE_WEBHOOK_SECRET=` : secret de signature du webhook Stripe
-- `STRIPE_PRICE_MONTHLY_ID=` : price ID du plan mensuel (2 CHF/mois)
-- `STRIPE_PRICE_YEARLY_ID=` : price ID du plan annuel (19 CHF/an)
-- `APP_URL=` : URL publique de l'application (utilisée pour les retours checkout)
+1. Installer les dépendances :
 
-### Cron hebdomadaire
+```bash
+npm install
+```
 
-Planifier un appel hebdomadaire vers:
+2. Créer le fichier d’environnement à partir du template :
 
-- `GET /api/cron/weekly-email`
+```bash
+cp .env.exemple .env
+```
 
-Le secret doit être envoyé soit:
+3. Renseigner les variables dans `.env` (voir section dédiée ci-dessous).
 
-- dans le header `x-cron-secret`, ou
-- dans `Authorization: Bearer <CRON_WEEKLY_EMAIL_SECRET>`
+4. Générer Prisma Client + appliquer les migrations :
 
-### Envoi test
+```bash
+npx prisma generate
+npx prisma migrate dev
+```
 
-Pour valider l'intégration Resend, appeler:
+5. Démarrer le serveur de développement :
 
-- `GET /api/cron/weekly-email?testTo=ton-email@domaine.com`
+```bash
+npm run dev
+```
 
-avec le même secret de cron.
+6. Ouvrir l’application :
 
-### Cron quotidien IA
+- http://localhost:3000
 
-Planifier un appel quotidien vers:
+## Scripts disponibles
 
-- `GET /api/cron/daily-ai-email`
+- `npm run dev` : lance Next.js en développement
+- `npm run build` : génère Prisma Client puis build Next.js
+- `npm run start` : lance l’app buildée
+- `npm run lint` : lance ESLint
 
-Le secret doit être envoyé soit:
+## Variables d’environnement
 
-- dans le header `x-cron-secret`, ou
-- dans `Authorization: Bearer <CRON_DAILY_AI_EMAIL_SECRET>`
+Créer `.env` à partir de `.env.exemple`.
 
-### Envoi test (quotidien IA)
+### Authentification Clerk
 
-Pour valider l'intégration OpenAI + Resend, appeler:
+- `CLERK_WEBHOOK_SIGNING_SECRET` : vérification signature webhook Clerk
+- `CLERK_SECRET_KEY` : clé serveur Clerk
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` : clé publique Clerk
 
-- `GET /api/cron/daily-ai-email?testTo=ton-email@domaine.com`
+### Base de données (Neon)
 
-avec le secret `CRON_DAILY_AI_EMAIL_SECRET`.
+- `DATABASE_URL` : URL PostgreSQL utilisée par Prisma
 
-### Cron quotidien push
+### Stripe (billing)
 
-Planifier un appel quotidien vers:
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` : clé publique Stripe (frontend)
+- `STRIPE_SECRET_KEY` : clé privée Stripe (backend)
+- `STRIPE_WEBHOOK_SECRET` : secret de signature webhook Stripe
+- `STRIPE_PRICE_MONTHLY_ID` : Price ID mensuel
+- `STRIPE_PRICE_YEARLY_ID` : Price ID annuel
+- `APP_URL` : URL publique de l’application (retours Checkout / portail)
 
-- `GET /api/cron/daily-push`
+### Emails (Resend + OpenAI)
 
-Le secret doit être envoyé soit:
+- `CRON_WEEKLY_EMAIL_SECRET` : secret cron email hebdomadaire
+- `EMAIL_FROM` : expéditeur email (ex: `tracker <no-reply@tracker.app>`)
+- `RESEND_API_KEY` : clé Resend
+- `CRON_DAILY_AI_EMAIL_SECRET` : secret cron email IA quotidien
+- `OPENAI_API_KEY` : clé OpenAI
+- `SHOW_EMAIL_TEST_ACTIONS` : active les boutons de test email dans settings
 
-- dans le header `x-cron-secret`, ou
-- dans `Authorization: Bearer <CRON_DAILY_PUSH_SECRET>`
+### Notifications push
 
-Le push quotidien:
+- `CRON_DAILY_PUSH_SECRET` : secret cron push quotidien
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` : clé publique VAPID (frontend)
+- `VAPID_PRIVATE_KEY` : clé privée VAPID (backend)
+- `VAPID_SUBJECT` : contact VAPID (`mailto:...`)
 
-- envoie un titre court et motivant
-- envoie un body factuel + encouragement
-- pointe vers `/today`
-- nettoie automatiquement les subscriptions expirées et invalides (`410`, `404`)
+## Intégrations externes
 
-### API subscriptions push
+### Clerk
 
-- `POST /api/push/subscriptions` : enregistrer ou mettre à jour une subscription navigateur
-- `DELETE /api/push/subscriptions` : supprimer une subscription
+Rôle : authentification, session utilisateur, RBAC admin via metadata.
 
-### Checkout et webhook Stripe
+- Utilisé côté serveur (`auth`, `currentUser`) et côté client (`useUser`).
+- L’accès admin repose sur `publicMetadata.role === "admin"`.
 
-- `POST /api/stripe/checkout` avec body `{ "plan": "monthly" }` ou `{ "plan": "yearly" }`
-- `POST /api/stripe/webhook` pour synchroniser l'état d'abonnement côté application
+Configurer un admin dans Clerk Dashboard > User > Metadata > Public metadata :
 
-Événements gérés par le webhook:
+```json
+{
+  "role": "admin"
+}
+```
 
-- `checkout.session.completed`
-- `customer.subscription.created`
-- `customer.subscription.updated`
-- `customer.subscription.deleted`
-- `invoice.payment_failed`
+### Stripe
 
-Page client:
+Rôle : gestion des abonnements premium.
 
-- `GET /pricing` pour afficher les offres et démarrer Stripe Checkout
+- Endpoint de création checkout : `POST /api/stripe/checkout`
+- Webhook de sync : `POST /api/stripe/webhook`
+- Portail client : `POST /api/stripe/portal`
+- Événements gérés :
+  - `checkout.session.completed`
+  - `customer.subscription.created`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+  - `invoice.payment_failed`
+
+### Neon
+
+Rôle : hébergement PostgreSQL.
+
+- Prisma lit/écrit via `DATABASE_URL`.
+- Les migrations sont versionnées dans `prisma/migrations`.
+
+### Resend
+
+Rôle : envoi des emails produits (hebdo / quotidien IA).
+
+- Email hebdomadaire : `GET /api/cron/weekly-email`
+- Email quotidien IA : `GET /api/cron/daily-ai-email`
+- Les endpoints de cron sont protégés par secret (`x-cron-secret` ou `Authorization: Bearer ...`).
+
+## Cron et tests manuels
+
+### Hebdomadaire
+
+- Endpoint : `GET /api/cron/weekly-email`
+- Auth : `CRON_WEEKLY_EMAIL_SECRET`
+- Test ciblé : `GET /api/cron/weekly-email?testTo=ton-email@domaine.com`
+
+### Quotidien IA
+
+- Endpoint : `GET /api/cron/daily-ai-email`
+- Auth : `CRON_DAILY_AI_EMAIL_SECRET`
+- Test ciblé : `GET /api/cron/daily-ai-email?testTo=ton-email@domaine.com`
+
+### Push quotidien
+
+- Endpoint : `GET /api/cron/daily-push`
+- Auth : `CRON_DAILY_PUSH_SECRET`
+
+## Administration (`/admin`)
+
+- Route UI : `GET /admin`
+- API listage users : `GET /api/admin/users`
+- API toggle premium manuel : `PATCH /api/admin/users/{userId}/premium`
+- Accès strictement réservé aux utilisateurs admin Clerk.
+
+Informations visibles dans l’interface :
+- email
+- date d’inscription
+- statut d’abonnement
+- rôle utilisateur (via metadata Clerk pour l’accès)
+- état premium accordé (`premiumGranted`)
+
+## Notes utiles
+
+- Le projet utilise les routes API Next.js (`app/api/**`).
+- Le build exécute `prisma generate` automatiquement.
+- En preview/dev Clerk, les adresses email OAuth peuvent être masquées/sanitisées selon la config Clerk.

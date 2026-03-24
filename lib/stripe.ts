@@ -1,3 +1,5 @@
+// Documentation FR: Module utilitaire partagé (helpers métier et intégrations).
+
 import Stripe from 'stripe';
 
 let stripeSingleton: Stripe | null = null;

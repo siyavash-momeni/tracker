@@ -1,3 +1,5 @@
+// Documentation FR: Route API serveur de Tracker (validation, accès auth et logique métier).
+
 export type WeeklyEmailStats = {
   totalCheckIns: number;
   completionRate: number;

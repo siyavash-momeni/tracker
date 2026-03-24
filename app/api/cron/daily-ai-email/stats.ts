@@ -1,3 +1,5 @@
+// Documentation FR: Route API serveur de Tracker (validation, accès auth et logique métier).
+
 import { prisma } from '@/prisma.client';
 import { getIsoDayFromUtcDate } from './date-utils';
 import { DailyEmailStats } from './types';

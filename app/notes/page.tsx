@@ -1,3 +1,5 @@
+// Documentation FR: Page UI principale de Tracker (affichage et interactions côté client).
+
 "use client"; // Obligatoire pour les hooks useState/useEffect
 
 import { useAuth } from "@clerk/nextjs"; // Version client de auth()
