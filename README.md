@@ -107,3 +107,41 @@ Le push quotidien:
 Page client:
 
 - `GET /pricing` pour afficher les offres et démarrer Stripe Checkout
+
+### Système d'administration (RBAC)
+
+L'application utilise Clerk pour gérer les rôles admin via les métadonnées publiques.
+
+#### Configuration d'un administrateur
+
+1. Aller sur le dashboard Clerk
+2. Sélectionner l'utilisateur
+3. Dans **User metadata**, ajouter dans **Public metadata** :
+   ```json
+   {
+     "role": "admin"
+   }
+   ```
+
+#### Routes et accès admin
+
+
+Les deux routes sont **restreintes aux utilisateurs avec `role: admin`** dans leurs métadonnées Clerk.
+
+Si un utilisateur non-admin accède à `/admin`, il est redirigé vers l'accueil.
+S'il appelle `/api/admin/users` sans être admin, la réponse est `403 Forbidden`.
+
+#### Interface admin
+
+La page `/admin` affiche :
+
+  - Email
+  - Date d'inscription
+  - Statut d'abonnement (FREE, TRIALING, ACTIVE, PAST_DUE, CANCELED, etc.)
+  - Plan (Mensuel, Annuel, ou —)
+  - Fin de période d'abonnement
+  - Accès premium (Accordé, Actif, Non)
+
+#### Implémentation technique
+
+- **Route premium** : `app/api/admin/users/[userId]/premium/route.ts` - Toggle l'accès premium
