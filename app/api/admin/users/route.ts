@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/prisma.client';
 import { requireAdminAccess } from '@/lib/admin';
+import { clerkClient } from '@clerk/nextjs/server';
 
 export async function GET() {
   try {
@@ -34,7 +35,28 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ users });
+    const clerk = await clerkClient();
+
+    const usersWithRole = await Promise.all(
+      users.map(async (dbUser) => {
+        try {
+          const clerkUser = await clerk.users.getUser(dbUser.clerkId);
+          const role = clerkUser.publicMetadata?.role === 'admin' ? 'admin' : 'user';
+
+          return {
+            ...dbUser,
+            role,
+          };
+        } catch {
+          return {
+            ...dbUser,
+            role: 'user' as const,
+          };
+        }
+      })
+    );
+
+    return NextResponse.json({ users: usersWithRole });
   } catch (error) {
     if (error instanceof Error && error.message === 'Admin access required') {
       return NextResponse.json({ error: 'Accès admin requis' }, { status: 403 });
