@@ -10,6 +10,7 @@ type UserInfo = {
   id: string;
   clerkId: string;
   email: string;
+  role: 'admin' | 'user';
   createdAt: string;
   subscriptionStatus: string;
   subscriptionInterval: string;
@@ -156,6 +157,7 @@ export default function AdminPage() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Rôle</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Inscription</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Statut</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Plan</th>
@@ -168,6 +170,17 @@ export default function AdminPage() {
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{user.email}</td>
+                    <td className="px-6 py-4 text-sm">
+                      {user.role === 'admin' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          Admin
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          User
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {new Date(user.createdAt).toLocaleDateString('fr-FR')}
                     </td>
