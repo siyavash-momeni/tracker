@@ -1,3 +1,5 @@
+// Documentation FR: Route API serveur de Tracker (validation, accès auth et logique métier).
+
 import { Resend } from 'resend';
 import { WeeklyEmailStats } from './types';
 

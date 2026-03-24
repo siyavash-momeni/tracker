@@ -1,3 +1,5 @@
+// Documentation FR: Route API serveur de Tracker (validation, accès auth et logique métier).
+
 import { NextResponse } from 'next/server';
 import { GET as GET_EMAIL } from '../daily-ai-email/route';
 import { GET as GET_PUSH } from '../daily-push/route';

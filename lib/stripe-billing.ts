@@ -1,3 +1,5 @@
+// Documentation FR: Module utilitaire partagé (helpers métier et intégrations).
+
 import Stripe from 'stripe';
 import { prisma } from '@/prisma.client';
 import type { SubscriptionStatus } from '@prisma/client';

@@ -1,3 +1,5 @@
+// Documentation FR: Manifest PWA de Tracker (nom, icônes et métadonnées installables).
+
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {

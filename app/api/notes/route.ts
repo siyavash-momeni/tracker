@@ -1,3 +1,5 @@
+// Documentation FR: Route API serveur de Tracker (validation, accès auth et logique métier).
+
 import { NextResponse } from 'next/server';
 import { prisma } from "@/prisma.client"; // Vérifie bien que c'est le bon chemin vers ton instance
 import { auth } from "@clerk/nextjs/server";

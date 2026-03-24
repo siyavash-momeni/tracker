@@ -1,5 +1,6 @@
 "use client";
 
+// Documentation FR: Page UI principale de Tracker (affichage et interactions côté client).
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader, Plus, Check, MoreVertical } from "lucide-react";
 import Link from "next/link";

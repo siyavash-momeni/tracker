@@ -1,5 +1,6 @@
 'use client';
 
+// Documentation FR: Composant d'onboarding pour activer les notifications push.
 import { useAuth } from '@clerk/nextjs';
 import { useEffect, useMemo, useState } from 'react';
 

@@ -1,5 +1,6 @@
 'use client';
 
+// Documentation FR: Élément de navigation admin affiché uniquement pour les utilisateurs autorisés.
 import { useUser } from '@clerk/nextjs';
 import { Shield } from 'lucide-react';
 import Link from 'next/link';

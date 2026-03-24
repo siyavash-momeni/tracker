@@ -1,5 +1,6 @@
 'use client';
 
+// Documentation FR: Page UI principale de Tracker (affichage et interactions côté client).
 import { useState } from 'react';
 import { Plus, AlertCircle, SmilePlus } from 'lucide-react';
 import EmojiPicker, { Theme, EmojiStyle } from 'emoji-picker-react';

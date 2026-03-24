@@ -1,3 +1,5 @@
+// Documentation FR: Script utilitaire exécuté manuellement pour la configuration du projet.
+
 import fs from 'node:fs';
 import path from 'node:path';
 import Stripe from 'stripe';

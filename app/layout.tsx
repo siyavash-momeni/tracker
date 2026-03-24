@@ -1,5 +1,6 @@
 'use client';
 
+// Documentation FR: Layout global de l'application (shell, navigation, provider Clerk).
 import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs';
 import "./globals.css";
 import { Home, BarChart2, PlusCircle, Settings } from "lucide-react";

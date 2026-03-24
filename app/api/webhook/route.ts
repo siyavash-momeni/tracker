@@ -1,3 +1,5 @@
+// Documentation FR: Route API serveur de Tracker (validation, accès auth et logique métier).
+
 import { verifyWebhook } from '@clerk/nextjs/webhooks'
 import { NextRequest } from 'next/server'
 import { PrismaClient } from '@prisma/client'

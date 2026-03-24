@@ -1,3 +1,5 @@
+// Documentation FR: Module utilitaire partagé (helpers métier et intégrations).
+
 import { auth, currentUser } from '@clerk/nextjs/server';
 
 /**
