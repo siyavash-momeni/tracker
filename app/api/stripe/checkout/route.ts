@@ -12,13 +12,6 @@ function parsePlan(value: unknown): SubscriptionPlan | null {
   return null;
 }
 
-function buildEmailAlias(baseEmail: string, clerkId: string) {
-  const [localPartRaw, domainRaw] = baseEmail.split('@');
-  const localPart = localPartRaw || 'user';
-  const domain = domainRaw || 'local.invalid';
-  return `${localPart}+clerk-${clerkId.slice(0, 8)}@${domain}`;
-}
-
 export async function POST(request: Request) {
   try {
     const { userId } = await auth();
@@ -102,14 +95,20 @@ export async function POST(request: Request) {
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === 'P2002'
         ) {
-          user = await prisma.user.create({
-            data: {
-              clerkId: userId,
-              email: buildEmailAlias(normalizedEmail, userId),
-              dailyPushEnabled: false,
-            },
+          // L'email est déjà utilisé — on vérifie à qui il appartient
+          const conflictUser = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
             select: userSelect,
           });
+          if (conflictUser) {
+            // Même utilisateur Clerk (ex: doublon création) → on réutilise le compte
+            user = conflictUser;
+          } else {
+            return NextResponse.json(
+              { error: 'Cette adresse email est déjà utilisée par un autre compte.' },
+              { status: 409 }
+            );
+          }
         } else {
           throw error;
         }
